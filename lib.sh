@@ -29,33 +29,42 @@ album_get() {
 }
 
 title_artist_get() {
-    #1. force artist
-    local artist="$ARTIST"
+    local artists
     local title=$(basename "$1")
     # remove extension 
     title=${title%.*}
     # remove leading special chars
     title=$(echo "$title" | sed -e 's/^[0-9\.\ \-]*//')
 
-    #2. read artist from filename
-    if [ -z "$artist" ] || [[ "$title" =~ "$artist" ]]; then
-        # title - artist
-        IFS='-' read -r a b <<< "$title"
-        if [ ! -z "$b" ]; then
-            [ "$ARTIST_TITLE" -ne 0 ] && {
-                title="$b" && artist="$a"
-            } || {
-                title="$a" && artist="$b"
-            }
-        else
-            # chinese '（）'
-            IFS='()（）' read -r title artist <<< "$title"
-        fi
+    #1. read artists from filename
+    # title - artists
+    IFS='-' read -r a b <<< "$title"
+    if [ ! -z "$b" ]; then
+        [ "$ARTIST_TITLE" -ne 0 ] && {
+            title="$b" && artists="$a"
+        } || {
+            title="$a" && artists="$b"
+        }
+    else
+        # chinese '（）'
+        IFS='()（）' read -r title artists <<< "$title"
     fi
     
-    #3. read artist from file
-    [ -z "$artist" ] && {
-        IFS='=' read _ artist <<< $(ffprobe "${FFARGS[@]}" -show_entries format_tags "$1" | grep -i artist -w)
+    #2. read artists from file
+    [ -z "$artists" ] && {
+        IFS='=' read _ artists <<< $(ffprobe "${FFARGS[@]}" -show_entries format_tags "$1" | grep -i artist -w)
+    }
+
+    # concat artists with '&', spaces are allowed(person name)
+    #  => correct format: artist1/artist2/...
+    #artists="${artists//[,_\/\ \-]/\&}"    # use this line to correct malformed artists
+    artists="${artists//[,_\/\-]/\&}"
+
+    #3. prepend album artist
+    [ ! -z "$ARTIST" ] && {
+        [[ "$artists" =~ "$ARTIST" ]] || {
+            [ -z "$artists" ] && artists="$ARTIST" || artists="$ARTIST&$artists"
+        }
     }
 
     # remove spaces
@@ -63,9 +72,9 @@ title_artist_get() {
     title=${title/% /}
 
     # replace special chars
-    title="${title//[()\-]/}"           # no '()-' in title, spaces are allowed(English title)
-    artist="${artist//[,_\/\ \-]/\&}"   # concat artists with '&', spaces are allowed(person name)
+    # no '()-' in title, spaces are allowed(English title)
+    title="${title//[()\-]/}"
 
     # use '-' as seperator on output
-    echo "$title-$artist"
+    echo "$title-$artists"
 }

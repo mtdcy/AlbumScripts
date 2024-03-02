@@ -62,8 +62,7 @@ for file in "${LIST[@]}"; do
                     artist="${artist//&/\/}"
 
                     # album artist
-                    album_artist="$artist"
-                    [ ! -z "$ARTIST" ] && album_artist="$ARTIST"
+                    [ -z "$ARTIST" ] && IFS='&' read album_artist _ <<< "$artist" || album_artist="$ARTIST"
                     
                     # using temp file to avoid write partial files
                     ffmpeg "${FFARGS[@]}"                      \
