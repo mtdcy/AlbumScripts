@@ -37,7 +37,7 @@ for ext in wav flac ape; do
     # remove pregap
     rm -fv 00.pregap.flac || true
     # add tags
-    cuetag.sh "$cue" *.flac
+    cuetag.sh "$cue" $(find *.flac | grep -v "${cue/%cue/flac}")
     # remove cue and its data file
     #rm "$cue" "$file" &&
     # 我们要合并多个CD，track/TRACKTOTAL会导致显示顺序错误 => 按文件名排序
