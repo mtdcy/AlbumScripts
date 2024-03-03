@@ -51,14 +51,17 @@ title_artist_get() {
     fi
     
     #2. read artists from file
-    [ -z "$artists" ] && {
-        IFS='=' read _ artists <<< $(ffprobe "${FFARGS[@]}" -show_entries format_tags "$1" | grep -i artist -w)
+    [ -z "$artists" ] && 
+    [ "$UPDATE_ARTIST" -eq 0 ] && {
+        local tags=$(ffprobe "${FFARGS[@]}" -show_entries format_tags "$1")
+        [ -z "$artists" ] && IFS='=' read -r _ artists <<< $(grep -i 'artist' -w <<< "$tags")
+        [ -z "$title" ]   && IFS='=' read -r _ title   <<< $(grep -i 'title' -w <<< "$tags")
     }
 
     # concat artists with '&', spaces are allowed(person name)
     #  => correct format: artist1/artist2/...
     #artists="${artists//[,_\/\ \-]/\&}"    # use this line to correct malformed artists
-    artists="${artists//[,_\/\-]/\&}"
+    artists="${artists//[,_\/\-，、]/\&}"
 
     #3. prepend album artist
     [ ! -z "$ARTIST" ] && {
@@ -70,6 +73,8 @@ title_artist_get() {
     # remove spaces
     title=${title/# /}
     title=${title/% /}
+    artists=${artists/# /}
+    artists=${artists/% /}
 
     # replace special chars
     # no '()-' in title, spaces are allowed(English title)
