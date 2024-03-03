@@ -38,7 +38,7 @@ for file in "${LIST[@]}"; do
     target="$DEST/"$(basename "$file")
    
     case "${file,,}" in
-        *.wma|*.flac|*.wav)
+        *.wma|*.flac|*.wav|*.mp3|*.m4a|*.ape)
             # ignore cue files
             [ -e "${file%.*}.cue" ] && echo -e "... $file ==> ignored" && continue;
             
@@ -49,21 +49,18 @@ for file in "${LIST[@]}"; do
 
             # replace extension
             target="${target%.*}.m4a"
-            echo -ne "#$(printf '%02d' $njobs) $file ==> $target"
+            echo -e "#$(printf '%02d' $njobs) $file ==> $target"
            
-            [ $RUN -ne 0 ] && {
-                # remove existing one
-                [ $FORCE -ne 0 ] && rm -f "$target" || true
+            # replace seperator char
+            artist="${artist//&/\/}"
 
-                [ ! -e "$target" ] && {
-                    echo -e " << ARTIST: [$artist], ALBUM: [$album], TITLE: [$title]"
+            # album artist
+            [ -z "$ARTIST" ] && IFS='&' read -r album_artist _ <<< "$artist" || album_artist="$ARTIST"
 
-                    # replace seperator char
-                    artist="${artist//&/\/}"
+            echo -e "\t==> ARTIST: [$artist], ALBUM: [$album], TITLE: [$title]"
 
-                    # album artist
-                    [ -z "$ARTIST" ] && IFS='&' read album_artist _ <<< "$artist" || album_artist="$ARTIST"
-                    
+            if [ "$FORCE" -ne 0 ] || [ ! -f "$target" ]; then
+                [ "$RUN" -ne 0 ] && {
                     # using temp file to avoid write partial files
                     ffmpeg "${FFARGS[@]}"                      \
                         -i "$file"                             \
@@ -76,12 +73,12 @@ for file in "${LIST[@]}"; do
                         "/tmp/$$-$njobs.m4a" &&
                     mv "/tmp/$$-$njobs.m4a" "$target" &
 
-                    njobs=$(expr $njobs + 1) &&
-                    [ $(expr $njobs % $NJOBS) -eq 0 ] &&
-                    echo -e "#$(printf '%02d' $njobs) too much background jobs ..." &&
-                    wait || true
-                } || echo -e " >> target exists, skip"
-            } || echo -e " >> testing ..."
+                    njobs=$(("$njobs" + 1)) &&
+                    [ $(("$njobs" % "$NJOBS")) -eq 0 ] &&
+                    echo -e "#$(printf '%02d' "$njobs") too much background jobs ..." &&
+                    { wait || true; }
+                }
+            fi
             ;;
         *.jpg)
             echo -e "... $file ==> $target"
