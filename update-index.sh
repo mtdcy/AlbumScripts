@@ -44,6 +44,17 @@ for file in "${LIST[@]}"; do
     [ "$TITLE_ARTIST" -ne 0 ] && [ ! -z "$artist" ] && target+="(${artist//\//\&})"
     # add extension (lowercase)
     target+=".$(echo ${file##*.} | tr A-Z a-z)"
+    
+    # ape -> flac, better to work with ffmpeg
+    case "${target,,}" in
+        *.ape)
+            target="${target%.*}.flac"
+            codec=(-c flac)
+            ;;
+        *)
+            codec=(-c copy)
+            ;;
+    esac
 
     echo -e "$file ==> $target << ARTIST: $artist, TITLE: $title"
 
@@ -57,7 +68,7 @@ for file in "${LIST[@]}"; do
                 -map_metadata -1                    \
                 -metadata ARTIST="${artist//&/\/}"  \
                 -metadata TITLE="$title"            \
-                -c copy                             \
+                ${codec[@]}                         \
                 "/tmp/$$.${target##*.}" &&
             rm "$file" &&
             mv "/tmp/$$.${target##*.}" "$target"
