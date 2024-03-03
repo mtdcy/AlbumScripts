@@ -38,6 +38,7 @@ title_artist_get() {
 
     #1. read artists from filename
     # title - artists
+    # 01 - 歌曲名 - 歌手名1&歌手名2.flac
     IFS='-' read -r a b <<< "$title"
     if [ ! -z "$b" ]; then
         [ "$ARTIST_TITLE" -ne 0 ] && {
@@ -46,12 +47,25 @@ title_artist_get() {
             title="$a" && artists="$b"
         }
     else
+        # 01.歌曲名(歌手名1&歌手名2).flac
+        # exception: 01.(系列/备注/...)歌曲名(歌手名1&歌手名2).flac
         # chinese '（）'
-        IFS='()（）' read -r title artists <<< "$title"
+        local c="$title"
+        while [ -n "$c" ]; do
+            IFS='()（）' read -r _ artists c <<< "$c"
+        done
+
+        [ -n "$artists" ] && {
+            title="${title%$artists*}"
+            title="${title%[\(（]}"
+        }
+
+        #title=$(sed -e "s:$artists.*$::" \
+        #            -e 's/[\(（]\?$//'  \
+        #            <<< "$title")
     fi
     
     #2. read artists from file
-    [ -z "$artists" ] && 
     [ "$UPDATE_ARTIST" -eq 0 ] && {
         local tags=$(ffprobe "${FFARGS[@]}" -show_entries format_tags "$1")
         [ -z "$artists" ] && IFS='=' read -r _ artists <<< $(grep -i 'artist' -w <<< "$tags")
@@ -77,8 +91,8 @@ title_artist_get() {
     artists=${artists/% /}
 
     # replace special chars
-    # no '()-' in title, spaces are allowed(English title)
-    title="${title//[()\-]/}"
+    # no '.-' in title, spaces are allowed(English title)
+    title="${title//[\.\-]/ }"
 
     # use '-' as seperator on output
     echo "$title-$artists"
