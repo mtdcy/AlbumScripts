@@ -27,7 +27,7 @@ FORCE=${FORCE:-0}
 [ $# -lt 2 ] && usage && exit 1
 
 # list files into an array
-LIST=($(find "$1" -type f | sort -n))
+LIST=($(find "$1" -maxdepth 1 -type f | sort -n))
 
 # prepare target dir
 DEST="$2" && mkdir -pv "$DEST"
@@ -40,7 +40,7 @@ for file in "${LIST[@]}"; do
     case "${file,,}" in
         *.wma|*.flac|*.wav)
             # ignore cue files
-            [ -e "${file%.*}.cue" ] && echo -e "$file ==> ignored" && continue;
+            [ -e "${file%.*}.cue" ] && echo -e "... $file ==> ignored" && continue;
             
             IFS='-' read -r title artist <<< $(title_artist_get "$file")
 
@@ -49,7 +49,7 @@ for file in "${LIST[@]}"; do
 
             # replace extension
             target="${target%.*}.m4a"
-            echo -ne "$(printf '%02d' $njobs): $file ==> $target"
+            echo -ne "#$(printf '%02d' $njobs) $file ==> $target"
            
             [ $RUN -ne 0 ] && {
                 # remove existing one
@@ -78,7 +78,7 @@ for file in "${LIST[@]}"; do
 
                     njobs=$(expr $njobs + 1) &&
                     [ $(expr $njobs % $NJOBS) -eq 0 ] &&
-                    echo -e "$njobs: too much background jobs ..." &&
+                    echo -e "#$(printf '%02d' $njobs) too much background jobs ..." &&
                     wait || true
                 } || echo -e " >> target exists, skip"
             } || echo -e " >> testing ..."
