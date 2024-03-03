@@ -2,7 +2,8 @@
 
 set -e
 
-. $(dirname "$0")/lib.sh
+LIBROOT=$(dirname "$0")
+. "$LIBROOT"/lib.sh
 
 usage() {
     cat << EOF
@@ -41,11 +42,12 @@ for file in "${LIST[@]}"; do
         *.wma|*.flac|*.wav|*.mp3|*.m4a|*.ape)
             # ignore cue files
             [ -e "${file%.*}.cue" ] && echo -e "... $file ==> ignored" && continue;
-            
-            IFS='-' read -r title artist <<< $(title_artist_get "$file")
 
             # use target dir as album
-            album=$(album_get "$2")
+            IFS='-' read -r year album genre <<< $(album_get "$2")
+
+            # get title & artist
+            IFS='-' read -r title artist <<< $(title_artist_get "$file")
            
             # replace seperator char
             artist="${artist//&/\/}"
@@ -53,7 +55,7 @@ for file in "${LIST[@]}"; do
             # album artist
             [ -z "$ARTIST" ] && IFS='&' read -r album_artist _ <<< "$artist" || album_artist="$ARTIST"
 
-            echo -e "\t==> ARTIST: [$artist], ALBUM: [$album], TITLE: [$title]"
+            echo -e "\t==> ARTIST: [$artist], ALBUM: [$album], TITLE: [$title], YEAR: [$year], GENRE: [$genre]"
 
             # replace extension
             #case "${target,,}" in
@@ -77,6 +79,8 @@ for file in "${LIST[@]}"; do
                         -metadata album_artist="$album_artist" \
                         -metadata album="$album"               \
                         -metadata title="$title"               \
+                        -metadata date="$year"                 \
+                        -metadata genre="$genre"               \
                         -c copy                                \
                         -c:a libfdk_aac                        \
                         -b:a 320k                              \

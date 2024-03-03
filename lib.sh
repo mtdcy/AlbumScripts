@@ -21,11 +21,32 @@ FFARGS=(-hide_banner -loglevel error)
 
 # album_get path/to/album 
 album_get() {
-    local album
-    # remove leading numbers & special chars
-    album=$(basename "$1" | sed -e 's/^[0-9.\ \-]*//')
+    local album=$(basename "$1")
+    local year
+    local genre
 
-    echo "$album"
+    # support album format:
+    #  1. date - album 
+    #  2. year.album
+
+    IFS='-' read -r a b <<< "$album"
+    [ -z "$b" ] && {
+        # year only
+        IFS='.' read -r a b <<< "$album"
+    }
+    [ -n "$b" ] && {
+        album="$b"
+        year="${a%%.*}"
+    }
+
+    # genre: 
+    #  => don't remove genre from album name
+    local c="$album"
+    while [ -n "$c" ]; do
+        IFS='()（）' read -r _ genre c <<< "$c"
+    done
+
+    echo "$year-$album-$genre"
 }
 
 title_artist_get() {
@@ -77,8 +98,13 @@ title_artist_get() {
     #artists="${artists//[,_\/\ \-]/\&}"    # use this line to correct malformed artists
     artists="${artists//[,_\/\-，、]/\&}"
 
+    # map 
+    artists=$(sed -f "$LIBROOT"/artist.sed <<< "$artists")
+
     #3. prepend album artist
-    [ ! -z "$ARTIST" ] && {
+    [ -n "$ARTIST" ] && {
+        ARTIST=$(sed -f "$LIBROOT"/artist.sed <<< "$ARTIST")
+
         [[ "$artists" =~ "$ARTIST" ]] || {
             [ -z "$artists" ] && artists="$ARTIST" || artists="$ARTIST&$artists"
         }
@@ -92,7 +118,8 @@ title_artist_get() {
 
     # replace special chars
     # no '.-' in title, spaces are allowed(English title)
-    title="${title//[\.\-]/ }"
+    title="${title//[\.]}"
+    title="${title//[\-]/,}"
 
     # use '-' as seperator on output
     echo "$title-$artists"
