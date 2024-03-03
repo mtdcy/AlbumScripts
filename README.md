@@ -1,8 +1,16 @@
 # 音乐专辑管理脚本
 
-## 更新文件名及标签信息
+## 更新文件名及标签信息 - [update-index.sh](update-index.sh)
 
-[update-index.sh](update-index.sh)
+### 依赖
+
+```shell
+#1. Ubuntu 
+sudo apt install ffmpeg
+
+#2. macOS
+brew install ffmpeg
+```
 
 ### 使用方法
 
