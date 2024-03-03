@@ -46,10 +46,6 @@ for file in "${LIST[@]}"; do
 
             # use target dir as album
             album=$(album_get "$2")
-
-            # replace extension
-            target="${target%.*}.m4a"
-            echo -e "#$(printf '%02d' $njobs) $file ==> $target"
            
             # replace seperator char
             artist="${artist//&/\/}"
@@ -59,24 +55,39 @@ for file in "${LIST[@]}"; do
 
             echo -e "\t==> ARTIST: [$artist], ALBUM: [$album], TITLE: [$title]"
 
+            # replace extension
+            #case "${target,,}" in
+            #    *.mp3)
+            #        # mp3 is a common file type, no need to convert to m4a
+            #        ;;
+            #    *)
+            #        ;;
+            #esac
+            target="${target%.*}.m4a"
+            echo -e "#$(printf '%02d' $njobs) $file ==> $target"
+
             if [ "$FORCE" -ne 0 ] || [ ! -f "$target" ]; then
                 [ "$RUN" -ne 0 ] && {
                     # using temp file to avoid write partial files
                     ffmpeg "${FFARGS[@]}"                      \
                         -i "$file"                             \
+                        -map 0                                 \
+                        -map_metadata 0                        \
                         -metadata artist="$artist"             \
                         -metadata album_artist="$album_artist" \
                         -metadata album="$album"               \
                         -metadata title="$title"               \
+                        -c copy                                \
                         -c:a libfdk_aac                        \
                         -b:a 320k                              \
                         "/tmp/$$-$njobs.m4a" &&
                     mv "/tmp/$$-$njobs.m4a" "$target" &
 
-                    njobs=$(("$njobs" + 1)) &&
-                    [ $(("$njobs" % "$NJOBS")) -eq 0 ] &&
-                    echo -e "#$(printf '%02d' "$njobs") too much background jobs ..." &&
-                    { wait || true; }
+                    njobs=$(("$njobs" + 1))
+                    [ $(("$njobs" % "$NJOBS")) -eq 0 ] && {
+                        echo -e "#$(printf '%02d' "$njobs") too much background jobs ..."
+                        wait
+                    }
                 }
             fi
             ;;
@@ -91,4 +102,5 @@ for file in "${LIST[@]}"; do
 done
 
 # wait for background jobs
-echo -e "=== wait for background jobs ...\n" && wait
+echo -e "<<< wait for background jobs ...\n"
+wait

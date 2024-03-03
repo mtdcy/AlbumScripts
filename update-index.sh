@@ -39,36 +39,38 @@ for file in "${LIST[@]}"; do
     IFS='-' read -r title artist <<< $(title_artist_get "$file")
 
     # build new filename
-    target=$(dirname "$file")"/$(printf '%02d' $index)"."$title"
+    target=$(dirname "$file")"/$(printf '%02d' $index).$title"
     # add artist
-    [ "$TITLE_ARTIST" -ne 0 ] && [ ! -z "$artist" ] && target+="(${artist//\//\&})"
+    [ "$TITLE_ARTIST" -ne 0 ] && [ -n "$artist" ] && target+="(${artist//\//\&})"
     # add extension (lowercase)
     target+=".$(echo ${file##*.} | tr A-Z a-z)"
+
+    echo -e "$file ==> $target\n\t==> ARTIST: [$artist], TITLE: [$title]"
     
     # ape -> flac, better to work with ffmpeg
     case "${target,,}" in
         *.ape)
             target="${target%.*}.flac"
-            codec=(-c flac)
+            codec=(-c:a flac)
             ;;
         *)
-            codec=(-c copy)
+            codec=(-c:a copy)
             ;;
     esac
-
-    echo -e "$file ==> $target << ARTIST: $artist, TITLE: $title"
 
     # rename files
     [ "$RUN" -ne 0 ] && {
         # 1. artist exists without append to filename 
         # 2. force update artist to file
-        if [ ! -z "$artist" ] && [ "$TITLE_ARTIST" -eq 0 ] || [ "$UPDATE_ARTIST" -ne 0 ]; then
+        if [ -n "$artist" ] && [ "$TITLE_ARTIST" -eq 0 ] || [ "$UPDATE_ARTIST" -ne 0 ]; then
             ffmpeg "${FFARGS[@]}"                   \
                 -i "$file"                          \
-                -map_metadata -1                    \
+                -map 0                              \
+                -map_metadata 0                     \
                 -metadata ARTIST="${artist//&/\/}"  \
                 -metadata TITLE="$title"            \
-                ${codec[@]}                         \
+                -c copy                             \
+                "${codec[@]}"                       \
                 "/tmp/$$.${target##*.}" &&
             rm "$file" &&
             mv "/tmp/$$.${target##*.}" "$target"
@@ -78,5 +80,5 @@ for file in "${LIST[@]}"; do
         fi
     }
 
-    index=$(expr "$index" + 1)
+    index=$(("$index" + 1))
 done
