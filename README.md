@@ -1,5 +1,32 @@
 # 音乐专辑管理脚本
 
+## CD/CUE分割 - [split-album.sh](split-album.sh)
+
+### 依赖
+
+```shell
+#1. Ubuntu 
+sudo apt install ffmpeg cuetools shntool flac
+
+#2. macOS
+brew install ffmpeg cuetools shntool flac
+```
+
+### 使用方法
+
+```shell
+#1. 指定专辑目录
+./split-album.sh /path/to/专辑
+
+#2. 指定专辑cue
+./split-album.sh /path/to/专辑.cue
+```
+
+**默认总是分割成flac文件。**
+
+**cue文件和数据文件的名称必须相同。**
+
+
 ## 更新文件名及标签信息 - [update-index.sh](update-index.sh)
 
 ### 依赖
@@ -23,9 +50,17 @@ TITLE_ARTIST=1 ./update-index.sh /path/to/专辑/*.flac
 
 #3. 更新文件名和标签信息
 UPDATE_ARTIST=1 ./update-index.sh /path/to/专辑/*.flac
+
+#4. 特殊文件处理：歌手名 - 歌曲名
+ARTIST_TITLE=1 ./update-index.sh /path/to/专辑/*.flac
+
+#5. 合并多个CD
+./update-index.sh /path/to/专辑CD1/*.flac /path/to/专辑CD2/*.flac
 ```
 
 **测试无误后，`export RUN=1`再执行以上命令即可真正实现更改。**
+
+**所有环境变量可以叠加使用。**
 
 ### 输入格式
 
