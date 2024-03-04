@@ -65,7 +65,7 @@ for file in "${LIST[@]}"; do
         # 2. force update artist to file
         if [ -n "$artist" ] && [ "$TITLE_ARTIST" -eq 0 ] || [ "$UPDATE_ARTIST" -ne 0 ]; then
             ffmpeg "${FFARGS[@]}"                   \
-                -i "$file"                          \
+                -i "file://$(realpath "$file")"     \
                 -map 0                              \
                 -map_metadata 0                     \
                 -metadata ARTIST="${artist//&/\/}"  \

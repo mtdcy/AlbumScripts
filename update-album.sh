@@ -79,7 +79,7 @@ for file in "${LIST[@]}"; do
                 [ "$RUN" -ne 0 ] && {
                     # using temp file to avoid write partial files
                     ffmpeg "${FFARGS[@]}"                      \
-                        -i "$file"                             \
+                        -i "file://$(realpath "$file")"        \
                         -map 0                                 \
                         -map_metadata 0                        \
                         -metadata artist="${artist//&/\/}"     \

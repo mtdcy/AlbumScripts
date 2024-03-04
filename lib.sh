@@ -102,9 +102,9 @@ title_artist_get() {
     
     #2. read artists from file
     [ "$UPDATE_ARTIST" -eq 0 ] && {
-        local tags=$(ffprobe "${FFARGS[@]}" -show_entries format_tags "$1")
         [ -z "$artists" ] && IFS='=' read -r _ artists <<< $(grep -i 'artist' -w <<< "$tags")
         [ -z "$title" ]   && IFS='=' read -r _ title   <<< $(grep -i 'title' -w <<< "$tags")
+        local tags=$(ffprobe "${FFARGS[@]}" -show_entries format_tags "file://$(realpath "$1")")
     }
 
     # concat artists with '&', spaces are allowed(person name)
