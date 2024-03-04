@@ -40,17 +40,19 @@ for cue in "$@"; do
 
     # remove pregap
     rm -fv 00.pregap.flac || true
+
+    list=($(find . -name "*.flac" | grep -v "$file"))
     # add tags (ignore errors)
-    cuetag.sh "$cue" "$(find . -name "*.flac" | grep -v "${cue/%cue/flac}")" || true
+    cuetag.sh "$cue" "${list[@]}" || true
     # remove cue and its data file
     #rm "$cue" "$file" &&
     # 我们要合并多个CD，track/TRACKTOTAL会导致显示顺序错误 => 按文件名排序
-    metaflac --preserve-modtime     \
-        --remove-tag=track          \
-        --remove-tag=TRACKNUMBER    \
-        --remove-tag=TRACKTOTAL     \
-        "$(find . -name "*.flac" | grep -v "$file")"
-    #    #--remove-tag=TITLE       \
+    metaflac --preserve-modtime                        \
+        --remove-tag=track                             \
+        --remove-tag=TRACKNUMBER                       \
+        --remove-tag=TRACKTOTAL                        \
+        "${list[@]}" || true
+    #    #--remove-tag=TITLE                           \
 
     # back to place
     cd -
