@@ -46,6 +46,13 @@ album_get() {
         IFS='()（）' read -r _ genre c <<< "$c"
     done
 
+    # remove spaces
+    year="${year// /}"
+    album=${album/# /}
+    album=${album/% /}
+    genre=${genre/# /}
+    genre=${genre/% /}
+
     echo "$year-$album-$genre"
 }
 
@@ -55,7 +62,12 @@ title_artist_get() {
     # remove extension 
     title=${title%.*}
     # remove leading special chars
-    title=$(echo "$title" | sed -e 's/^[0-9\.\ \-]*//')
+    title=$(sed -e 's/^[0-9\.\_\ \-]*//'    \
+                -e 's/（/(/g'               \
+                -e 's/）/)/g'               \
+                <<< "$title")
+    # exceptions
+    title=$(sed -f "$LIBROOT"/title.sed <<< "$title")
 
     #1. read artists from filename
     # title - artists
@@ -73,7 +85,9 @@ title_artist_get() {
         # chinese '（）'
         local c="$title"
         while [ -n "$c" ]; do
-            IFS='()（）' read -r _ artists c <<< "$c"
+            IFS='()' read -r _ artists c <<< "$c"
+
+            # exceptions
         done
 
         [ -n "$artists" ] && {

@@ -14,8 +14,17 @@ EOF
 
 [ $# -lt 2 ] && usage && exit 1
 
+# find obsolute(s)
+LIST=($(find "$2" -maxdepth 1 -type d))
+for dir in "${LIST[@]}"; do
+    [ -d "$1"/$(basename "$dir") ] || {
+        echo "remove obsolute $dir"
+        [ "$RUN" -ne 0 ] && rm -rfv "$dir"
+    }
+done
+
 # artist or album list
-LIST=($(find "$1"/* -maxdepth 0 -type d))
+LIST=($(find "$1" -maxdepth 1 -type d))
 
 for dir in "${LIST[@]}"; do
     

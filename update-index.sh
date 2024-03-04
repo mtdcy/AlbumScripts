@@ -16,7 +16,8 @@
 
 set -e
 
-. $(dirname "$0")/lib.sh
+LIBROOT=$(dirname "$0")
+. "$LIBROOT"/lib.sh
 
 usage() {
     cat << EOF

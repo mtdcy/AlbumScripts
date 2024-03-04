@@ -21,9 +21,17 @@ artist=$(basename "$2")
 # remove trailing chars
 artist="${artist%.*}"
 
-# list albums 
-LIST=($(ls -d "$1"/*/))
+# find obsolute(s)
+find "$2" -maxdepth 1 -type d | sed '1d' |
+while read -r album; do
+    [ -d "$1"/$(basename "$album") ] || {
+        echo "remove obsolute album $album"
+        [ "$RUN" -ne 0 ] && rm -rf "$album"
+    }
+done
 
-for album in "${LIST[@]}"; do
+# list albums 
+find "$1" -maxdepth 1 -type d | sed '1d' |
+while read -r album; do
     ARTIST="$artist" $(dirname "$0")/update-album.sh "$album" "$2"/$(basename "$album")
 done

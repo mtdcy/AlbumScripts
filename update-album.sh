@@ -27,11 +27,21 @@ FORCE=${FORCE:-0}
 
 [ $# -lt 2 ] && usage && exit 1
 
-# list files into an array
-LIST=($(find "$1" -maxdepth 1 -type f | sort -n))
+echo ">>> $1 ==> $2"
 
 # prepare target dir
 DEST="$2" && mkdir -pv "$DEST"
+
+# remove obsolute(s)
+for file in "$2"/*; do
+    [ -e "$1/"$(basename "${file%.*}").* ] || {
+        echo "remove obsolute $file"
+        [ "$RUN" -ne 0 ] && rm -f "$file"
+    }
+done
+
+# list files into an array
+LIST=($(find "$1" -maxdepth 1 -type f | sed '1d'))
 
 njobs=0
 for file in "${LIST[@]}"; do
@@ -68,7 +78,7 @@ for file in "${LIST[@]}"; do
             target="${target%.*}.m4a"
             echo -e "#$(printf '%02d' $njobs) $file ==> $target"
 
-            if [ "$FORCE" -ne 0 ] || [ ! -f "$target" ]; then
+            if [ "$FORCE" -ne 0 ] || [ "$file" -nt "$target" ]; then
                 [ "$RUN" -ne 0 ] && {
                     # using temp file to avoid write partial files
                     ffmpeg "${FFARGS[@]}"                      \
