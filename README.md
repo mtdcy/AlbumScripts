@@ -45,7 +45,6 @@ brew install ffmpeg cuetools shntool flac
 
 **cue文件和数据文件的名称必须相同。**
 
-
 ## 更新文件名及标签信息 - [update-index.sh](update-index.sh)
 
 ### 依赖
@@ -58,13 +57,26 @@ sudo apt install ffmpeg
 brew install ffmpeg
 ```
 
+### 环境变量
+
+* RUN           : 是否执行真正的命令（默认为0），主要用于检查输出是否正确。
+* TITLE_ARTIST  : 文件名是否包含歌手名（默认为0）。
+* UPDATE_ARTIST : 是否更新歌曲标签信息（默认为0）。
+* ARTIST_TITLE  : 歌手名是否在歌曲名前面（默认为0），主要用于处理特殊文件，不影响`update-index.sh`的输出。
+
+注意：
+
+1. `UPDATE_ARTIST=0`时，如果`TITLE_ARTIST=0`，依然会更新标签信息。
+2. `UPDATE_ARTIST=1`时，文件中的标签信息会被忽略，可用于更新标签信息，也可用于更正错误的标签信息。
+3. 所有环境变量可以叠加使用。
+
 ### 使用方法
 
 ```shell
 #1. 仅更新文件名
 ./update-index.sh /path/to/专辑/*.flac
 
-#2. 仅更新文件名（带歌手名）
+#2. 仅更新文件名（歌手名）
 TITLE_ARTIST=1 ./update-index.sh /path/to/专辑/*.flac
 
 #3. 更新文件名和标签信息
@@ -77,23 +89,21 @@ ARTIST_TITLE=1 ./update-index.sh /path/to/专辑/*.flac
 ./update-index.sh /path/to/专辑CD1/*.flac /path/to/专辑CD2/*.flac
 ```
 
-**测试无误后，`export RUN=1`再执行以上命令即可真正实现更改。**
-
-**所有环境变量可以叠加使用。**
+**测试无误后，`export RUN=1`再执行以上命令即可实现更改。**
 
 ### 输入格式
 
 * 歌曲名.flac
 * 01 - 歌曲名.flac
 * 01 - 歌曲名 - 歌手名.flac
-* 01 - 歌曲名 - 歌手名1&歌手名2.flac
+* 01 - 歌曲名 - 歌手1&歌手2.flac
 
 * 01.歌曲名.flac
 * 01.歌曲名(歌手名).flac
-* 01.歌曲名(歌手名1&歌手名2).flac
-* 01.(系列/备注/...)歌曲名(歌手名1&歌手名2).flac
+* 01.歌曲名(歌手1&歌手2).flac
+* 01.(系列/备注/...)歌曲名(歌手1&歌手2).flac
 
 ### 输出格式
 
-* 01.歌曲名(歌手名1&歌手名2).flac
+* 01.歌曲名(歌手1&歌手2).flac
 
