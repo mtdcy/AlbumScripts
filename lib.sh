@@ -56,9 +56,10 @@ album_get() {
     echo "$year-$album-$genre"
 }
 
+# title_artist_get /path/to/file
 title_artist_get() {
-    local artists
     local title=$(basename "$1")
+    local artists
     # remove extension 
     title=${title%.*}
     # remove leading special chars
@@ -68,11 +69,15 @@ title_artist_get() {
                 <<< "$title")
     # exceptions
     title=$(sed -f "$LIBROOT"/title.sed <<< "$title")
+    # private.sed
+    local private="$(dirname "$1")/private.sed"
+    [ -e "$private" ] || private="$(dirname "$1")/../private.sed"
+    [ -e "$private" ] && title="$(sed -f "$private" <<< "$title")"
 
     #1. read artists from filename
     # title - artists
     # 01 - 歌曲名 - 歌手名1&歌手名2.flac
-    IFS='-' read -r a b <<< "$title"
+    IFS=':-' read -r a b <<< "$title"
     if [ ! -z "$b" ]; then
         [ "$ARTIST_TITLE" -ne 0 ] && {
             title="$b" && artists="$a"
@@ -102,9 +107,9 @@ title_artist_get() {
     
     #2. read artists from file
     [ "$UPDATE_ARTIST" -eq 0 ] && {
-        [ -z "$artists" ] && IFS='=' read -r _ artists <<< $(grep -i 'artist' -w <<< "$tags")
-        [ -z "$title" ]   && IFS='=' read -r _ title   <<< $(grep -i 'title' -w <<< "$tags")
         local tags=$(ffprobe "${FFARGS[@]}" -show_entries format_tags "file://$(realpath "$1")")
+        [ -z "$artists" ] && IFS='=' read -r _ artists <<< $(grep -Fi 'artist' -w <<< "$tags")
+        [ -z "$title" ]   && IFS='=' read -r _ title   <<< $(grep -Fi 'title' -w <<< "$tags")
     }
 
     # concat artists with '&', spaces are allowed(person name)
@@ -125,7 +130,8 @@ title_artist_get() {
     }
     
     # uniq => array
-    IFS='&' read -r -a artists <<< "$(echo "${artists}" | tr '&' '\n' | sort -u -f | tr '\n' '&')"
+    artists="$(echo "${artists}" | tr '&' '\n' | sort -u -f | tr '\n' '&')"
+    artists="${artists%&}"
 
     # remove spaces
     title=${title/# /}
@@ -133,9 +139,15 @@ title_artist_get() {
 
     # replace special chars
     # no '.-' in title, spaces are allowed(English title)
-    title="${title//[\.]}"
-    title="${title//[\-]/,}"
+    #title="${title//[\.]}"
+    #title="${title//[\-]/,}"
+    title="$(sed                    \
+        -e 's/\-\([0-9]\+\)/\1/g'   \
+        -e 's/\s\?\-/,/g'           \
+        -e 's/\.\ */, /g'           \
+        -e 's/\ \+/ /g'             \
+        <<< "$title")"
 
     # use '-' as seperator on output
-    echo "$title-$(IFS='&' echo "${artists[*]}")"
+    echo "$title-$artists"
 }

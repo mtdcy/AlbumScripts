@@ -34,9 +34,9 @@ DEST="$2" && mkdir -pv "$DEST"
 
 # remove obsolute(s)
 for file in "$2"/*; do
-    [ -e "$1/"$(basename "${file%.*}").* ] || {
-        echo "remove obsolute $file"
-        [ "$RUN" -ne 0 ] && rm -f "$file"
+    find "$1" -name "$(basename "${file%.*}").*" || {
+        echo "remove outdated file $file"
+        [ "$RUN" -ne 0 ] && rm -fv "$file"
     }
 done
 

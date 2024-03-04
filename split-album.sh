@@ -9,14 +9,14 @@ set -e
 LC_ALL=C.UTF-8
 IFS=$'\n'
 
-for cue in "$@"; do
-    # find cue file
-    [ -d "$cue" ] && {
-        cue=$(find "$cue"/*.cue -type f | head -n1)
-    }
+CUE="$1"
 
-    [ ! -e "$cue" ] && echo "cue $cue not exists" && continue
+[ -d "$CUE" ] && {
+    CUE=($(find "$CUE" -iname "*.cue" -type f))
+}
 
+for cue in "${CUE[@]}"; do
+    echo ">>> split $cue"
     # change encodings
     vim +"set fileencoding=utf-8 | wq" "$cue" || true
 
@@ -30,8 +30,6 @@ for cue in "$@"; do
 
     [ -z "$file" ] && echo "can't find data file for $cue" && cd - && continue;
 
-    echo ">>> split $file"
-
     # do split 
     shnsplit -f "$cue" -t '%n.%t' -o flac -O always "$file" || {
         # some cue may split failed 
@@ -41,7 +39,7 @@ for cue in "$@"; do
     # remove pregap
     rm -fv 00.pregap.flac || true
 
-    list=($(find . -name "*.flac" | grep -v "$file"))
+    list=($(find . -name "*.flac" | grep -Fv "$file"))
     # add tags (ignore errors)
     cuetag.sh "$cue" "${list[@]}" || true
     # remove cue and its data file

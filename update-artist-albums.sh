@@ -15,18 +15,17 @@ EOF
 [ $# -lt 1 ] && usage && exit 1
 
 # artist
-artist=$(basename "$2")
+artist=$(basename "$1")
 # special artist name
 [ "$artist" = '群星' ] && unset artist
-# remove trailing chars
-artist="${artist%.*}"
+# remove comments
+IFS='()（）' read -r artist _ <<< "$artist"
 
 # find obsolute(s)
-find "$2" -maxdepth 1 -type d | sed '1d' |
-while read -r album; do
-    [ -d "$1"/$(basename "$album") ] || {
-        echo "remove obsolute album $album"
-        [ "$RUN" -ne 0 ] && rm -rf "$album"
+for album in "$2"/*; do
+    [ -d "$1/$(basename "$album")" ] || {
+        echo "remove outdated album $album"
+        [ "$RUN" -ne 0 ] && rm -rfv "$album"
     }
 done
 
