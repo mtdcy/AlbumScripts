@@ -60,6 +60,7 @@ brew install ffmpeg
 ### 环境变量
 
 * RUN           : 是否执行真正的命令（默认为0），主要用于检查输出是否正确。
+* ARTIST        : 强制专辑歌手名称（默认为空）。
 * TITLE_ARTIST  : 文件名是否包含歌手名（默认为0）。
 * UPDATE_ARTIST : 是否更新歌曲标签信息（默认为0）。
 * ARTIST_TITLE  : 歌手名是否在歌曲名前面（默认为0），主要用于处理特殊文件，不影响`update-index.sh`的输出。
