@@ -9,40 +9,39 @@ set -e
 LC_ALL=C.UTF-8
 IFS=$'\n'
 
-LOC="$(cd $(dirname $0) && pwd && cd -)"
+for cue in "$@"; do
+    # find cue file
+    [ -d "$cue" ] && {
+        cue=$(find "$cue"/*.cue -type f | head -n1)
+    }
 
-cue="$1"
+    [ ! -e "$cue" ] && echo "cue $cue not exists" && continue
 
-[[ "$cue" =~ .*.cue ]] || {
-    cue=$(find "$cue"/*.cue -type f | head -n1)
-}
+    # change encodings
+    vim +"set fileencoding=utf-8 | wq" "$cue" || true
 
-[ ! -e "$cue" ] && echo "cue $cue not exists" && exit 1
+    # enter source dir
+    cd "$(dirname "$cue")" && cue="$(basename "$cue")"
 
-# change encodings
-vim +"set fileencoding=utf-8 | wq" "$cue"
+    # find data file
+    for ext in wav flac ape; do
+        [ -e "${cue%.*}.$ext" ] && file="${cue%.*}.$ext"
+    done
 
-# enter source dir
-cd $(dirname "$cue") && cue=$(basename "$cue")
+    [ -z "$file" ] && echo "can't find data file for $cue" && cd - && continue;
 
-for ext in wav flac ape; do
-    file="${cue/%cue/$ext}"
-
-    [ -e "$file" ] || continue
-
-    echo "split ""$file"
+    echo ">>> split $file"
 
     # do split 
     shnsplit -f "$cue" -t '%n.%t' -o flac -O always "$file" || {
         # some cue may split failed 
         cuebreakpoints "$cue" | sed 's/$/0/g' | shnsplit -t '%n' -o flac -O always "$file" 
     }
-    [ $? -ne 0 ] && exit $?
 
     # remove pregap
     rm -fv 00.pregap.flac || true
-    # add tags
-    cuetag.sh "$cue" $(find *.flac | grep -v "${cue/%cue/flac}")
+    # add tags (ignore errors)
+    cuetag.sh "$cue" "$(find . -name "*.flac" | grep -v "${cue/%cue/flac}")" || true
     # remove cue and its data file
     #rm "$cue" "$file" &&
     # 我们要合并多个CD，track/TRACKTOTAL会导致显示顺序错误 => 按文件名排序
@@ -50,9 +49,9 @@ for ext in wav flac ape; do
         --remove-tag=track          \
         --remove-tag=TRACKNUMBER    \
         --remove-tag=TRACKTOTAL     \
-        $(find . -name "*.flac" | grep -v "$file")
+        "$(find . -name "*.flac" | grep -v "$file")"
     #    #--remove-tag=TITLE       \
-    exit
-done
 
-cd -
+    # back to place
+    cd -
+done
