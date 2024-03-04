@@ -123,12 +123,13 @@ title_artist_get() {
             [ -z "$artists" ] && artists="$ARTIST" || artists="$ARTIST&$artists"
         }
     }
+    
+    # uniq => array
+    IFS='&' read -r -a artists <<< "$(echo "${artists}" | tr '&' '\n' | sort -u -f | tr '\n' '&')"
 
     # remove spaces
     title=${title/# /}
     title=${title/% /}
-    artists=${artists/# /}
-    artists=${artists/% /}
 
     # replace special chars
     # no '.-' in title, spaces are allowed(English title)
@@ -136,5 +137,5 @@ title_artist_get() {
     title="${title//[\-]/,}"
 
     # use '-' as seperator on output
-    echo "$title-$artists"
+    echo "$title-$(IFS='&' echo "${artists[*]}")"
 }

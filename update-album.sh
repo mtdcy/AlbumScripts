@@ -58,9 +58,6 @@ for file in "${LIST[@]}"; do
 
             # get title & artist
             IFS='-' read -r title artist <<< $(title_artist_get "$file")
-           
-            # replace seperator char
-            artist="${artist//&/\/}"
 
             # album artist
             [ -z "$ARTIST" ] && IFS='&' read -r album_artist _ <<< "$artist" || album_artist="$ARTIST"
@@ -85,7 +82,7 @@ for file in "${LIST[@]}"; do
                         -i "$file"                             \
                         -map 0                                 \
                         -map_metadata 0                        \
-                        -metadata artist="$artist"             \
+                        -metadata artist="${artist//&/\/}"     \
                         -metadata album_artist="$album_artist" \
                         -metadata album="$album"               \
                         -metadata title="$title"               \
