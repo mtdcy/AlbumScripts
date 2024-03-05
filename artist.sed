@@ -9,6 +9,7 @@ s@\&\+$@@
 # 
 s@劉德華@刘德华@g
 s@鄧麗君@邓丽君@g
+s@Teresa Teng@邓丽君@Ig
 s@王靖雯@王菲@g     # 曾用名
 s@叶蒨文@叶倩文@g
 s@李龍基@李龙基@g
@@ -16,9 +17,9 @@ s@盧業媚@卢业媚@g
 s@張國榮@张国荣@g
 
 #
-s@Beethoven@贝多芬@g
-s@BEYOND@Beyond@g
-s@Faye Wong@王菲@g
+s@Beethoven@贝多芬@Ig
+s@BEYOND@Beyond@Ig
+s@Faye Wong@王菲@Ig
 
 # 
 s@羅@罗@g

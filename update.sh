@@ -28,16 +28,16 @@ LIST=($(find "$1" -maxdepth 1 -type d))
 for dir in "$1"/*; do
     [ -d "$dir" ] || continue
 
-    [ -e "$dir/ignore" ] && echo "### ignore $dir" && continue
+    [ -e "$dir/ignore" ] && echo -e "\n### ignore $dir" && continue
 
     target="$2${dir##"$1"}"
 
     # is artist ?
     if [ "$(find "$dir"/* -maxdepth 0 -type d ! -iname "CD*" | wc -l)" -gt 0 ]; then
-        echo "### update artist: $dir -> $target" 
+        echo -e "\n### update artist: $dir -> $target" 
         "$(dirname "$0")"/update-artist-albums.sh "$dir" "$target" #> /dev/null
     else
-        echo "### update album: $dir -> $target" 
+        echo -e "\n### update album: $dir -> $target" 
         "$(dirname "$0")"/update-album.sh "$dir" "$target" #> /dev/null
     fi
 done | tee update.log

@@ -28,16 +28,16 @@ FORCE=${FORCE:-0}
 
 [ $# -lt 2 ] && usage && exit 1
 
-echo -e "\n>>> $1 ==> $2"
+echo -e ">>> $1 ==> $2"
 
 # prepare target dir
 DEST="$2" && mkdir -pv "$DEST"
 
 # remove obsolute(s)
 for file in "$2"/*; do
-    find "$1" -name "$(basename "${file%.*}").*" > /dev/null || {
+    ls "$1/$(basename "${file%.*}")."* > /dev/null 2>&1 || {
         echo "... remove outdated file $file"
-        [ "$RUN" -ne 0 ] && rm -fv "$file"
+        [ "$RUN" -ne 0 ] && rm -f "$file"
     }
 done
 
@@ -52,7 +52,14 @@ for file in "$1"/*; do
     case "${file,,}" in
         *.wma|*.flac|*.wav|*.mp3|*.m4a|*.ape)
             # ignore cue files
-            [ -e "${file%.*}.cue" ] && echo -e "... $file ==> ignored" && continue;
+            [ -e "${file%.*}.cue" ] && {
+                #echo -e "... $file ==> ignored"
+                continue
+            }
+
+            target="${target%.*}.m4a"
+
+            [ -e "$target" ] && [ "$target" -nt "$file" ] && continue
 
             # use target dir as album
             IFS='-' read -r year album genre <<< "$(album_get "$2")"
@@ -65,13 +72,9 @@ for file in "$1"/*; do
 
             echo -e "=== ARTIST: [$artist], ALBUM: [$album], TITLE: [$title], YEAR: [$year], GENRE: [$genre]"
 
-            target="${target%.*}.m4a"
-
             # update ?
-            UPDATE=0
-            if [ "$FORCE" -ne 0 ] || [ ! -e "$target" ] || [ "$file" -nt "$target" ]; then
-                UPDATE=1
-            else
+            update="${FORCE:-0}"
+            [ "$update" -eq 0 ] && {
                 # get target tags
                 IFS='-' read -r a b c d e <<< "$(tags_read "$target")"
                 [ "$artist" = "$a" ] &&
@@ -79,10 +82,10 @@ for file in "$1"/*; do
                 [ "$title"  = "$c" ] &&
                 [ "$year"   = "$d" ] &&
                 [ "$genre"  = "$e" ] ||
-                UPDATE=1
-            fi
+                update=1
+            }
 
-            [ "$UPDATE" -ne 0 ] && {
+            [ "$update" -ne 0 ] && {
                 echo -e "#$(printf '%02d' $njobs) '$file' ==> '$target'"
                 # using temp file to avoid write partial files
                 [ "$RUN" -ne 0 ] && {
@@ -116,7 +119,7 @@ for file in "$1"/*; do
             fi
             ;;
         *)
-            echo -e "--- $file ==> ignored"
+            #echo -e "--- $file ==> ignored"
             ;;
     esac 
 done
