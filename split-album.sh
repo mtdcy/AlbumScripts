@@ -17,6 +17,8 @@ CUE="$1"
 }
 
 for cue in "${CUE[@]}"; do
+    [ -e "$(dirname "$cue")/ignore" ] && continue 
+
     echo -e "\n=== split $cue"
     # change encodings
     vim +"set fileencoding=utf-8 | wq" "$cue" || true
@@ -57,3 +59,11 @@ for cue in "${CUE[@]}"; do
     # back to place
     cd -
 done
+
+if [ -d "$1/CD1" ]; then
+    RUN=1 "$(dirname "$0")"/update-index.sh "$1/CD"*/*.flac
+    for flac in "$1/CD"*/*.flac; do
+        [ -e "${flac%.*}.cue" ] && continue
+        mv "$flac" "$1"
+    done
+fi
