@@ -15,6 +15,7 @@
 #  * index.title(artist1&artist2).flac      # need TITLE_ARTIST=1
 
 set -e
+umask 022
 
 LIBROOT=$(dirname "$0")
 . "$LIBROOT"/lib.sh

@@ -17,7 +17,15 @@ UPDATE_ARTIST=${UPDATE_ARTIST:-0}
 # internal variables
 IFS=$'\n'
 NJOBS=${NJOBS:-$(nproc)}
-FFARGS=(-hide_banner -loglevel error)
+FFARGS=(
+    -hide_banner 
+    -loglevel error
+)
+
+FORMAT=(
+    -c:a libfdk_aac
+    -b:a 320k
+    )
 
 # album_get path/to/album 
 album_get() {
@@ -50,6 +58,7 @@ album_get() {
     year="${year// /}"
     album=${album/# /}
     album=${album/% /}
+    album=${album//[\.\-]/ }    # no '.-' in album
     genre=${genre/# /}
     genre=${genre/% /}
 
@@ -58,26 +67,22 @@ album_get() {
 
 # title_artist_get /path/to/file
 title_artist_get() {
-    local title=$(basename "$1")
-    local artists
-    # remove extension 
-    title=${title%.*}
-    # remove leading special chars
-    title=$(sed -e 's/^[0-9\.\_\ \-]*//'    \
-                -e 's/（/(/g'               \
-                -e 's/）/)/g'               \
-                <<< "$title")
-    # exceptions
-    title=$(sed -f "$LIBROOT"/title.sed <<< "$title")
+    local title artists private
+    # regex filter
+    title=$(sed -f "$LIBROOT"/title.sed <<< "$(basename "${1%.*}")")
+
     # private.sed
-    local private="$(dirname "$1")/private.sed"
-    [ -e "$private" ] || private="$(dirname "$1")/../private.sed"
-    [ -e "$private" ] && title="$(sed -f "$private" <<< "$title")"
+    private="$(dirname "$1")/private.sed"
+    [ -r "$private" ] || private="$(dirname "$1")/../private.sed"
+    [ -r "$private" ] && title="$(sed -f "$private" <<< "$title")"
 
     #1. read artists from filename
-    # title - artists
-    # 01 - 歌曲名 - 歌手名1&歌手名2.flac
-    IFS=':-' read -r a b <<< "$title"
+    # 歌曲名 - 歌手1&歌手2.flac
+    local c="$title"
+    while [ -n "$c" ]; do 
+        IFS='-' read -r a b c <<< "$c"
+    done
+
     if [ ! -z "$b" ]; then
         [ "$ARTIST_TITLE" -ne 0 ] && {
             title="$b" && artists="$a"
@@ -85,25 +90,16 @@ title_artist_get() {
             title="$a" && artists="$b"
         }
     else
-        # 01.歌曲名(歌手名1&歌手名2).flac
+        # 歌曲名(歌手名1&歌手名2).flac
         # exception: 01.(系列/备注/...)歌曲名(歌手名1&歌手名2).flac
-        # chinese '（）'
-        local c="$title"
+        c="$title"
         while [ -n "$c" ]; do
-            IFS='()' read -r _ artists c <<< "$c"
-
-            # exceptions
+            IFS='()' read -r title artists c <<< "$c"
         done
-
-        [ -n "$artists" ] && {
-            title="${title%$artists*}"
-            title="${title%[\(（]}"
-        }
-
-        #title=$(sed -e "s:$artists.*$::" \
-        #            -e 's/[\(（]\?$//'  \
-        #            <<< "$title")
     fi
+
+    # map 
+    artists=$(sed -f "$LIBROOT"/artist.sed <<< "$artists")
     
     #2. read artists from file
     [ "$UPDATE_ARTIST" -eq 0 ] && {
@@ -112,42 +108,32 @@ title_artist_get() {
         [ -z "$title" ]   && IFS='=' read -r _ title   <<< $(grep -Fi 'title' -w <<< "$tags")
     }
 
-    # concat artists with '&', spaces are allowed(person name)
-    #  => correct format: artist1/artist2/...
-    #artists="${artists//[,_\/\ \-]/\&}"    # use this line to correct malformed artists
-    artists="${artists//[,_\/\-，、]/\&}"
-
-    # map 
-    artists=$(sed -f "$LIBROOT"/artist.sed <<< "$artists")
-
-    #3. prepend album artist
-    [ -n "$ARTIST" ] && {
-        ARTIST=$(sed -f "$LIBROOT"/artist.sed <<< "$ARTIST")
-
-        [[ "$artists" =~ "$ARTIST" ]] || {
-            [ -z "$artists" ] && artists="$ARTIST" || artists="$ARTIST&$artists"
-        }
+    #3. use album artist
+    [ -n "$ARTIST" ] && [ -z "$artists" ] && {
+        # don't map ARTIST here, needs to be considered in title.sed.
+        artists="$ARTIST"
     }
-    
-    # uniq => array
-    artists="$(echo "${artists}" | tr '&' '\n' | sort -u -f | tr '\n' '&')"
-    artists="${artists%&}"
 
-    # remove spaces
-    title=${title/# /}
-    title=${title/% /}
+    # finally: replace '-' with ' ', no '-' in title
+    title="${title//-/ /}"
 
-    # replace special chars
-    # no '.-' in title, spaces are allowed(English title)
-    #title="${title//[\.]}"
-    #title="${title//[\-]/,}"
-    title="$(sed                    \
-        -e 's/\-\([0-9]\+\)/\1/g'   \
-        -e 's/\s\?\-/,/g'           \
-        -e 's/\.\ */, /g'           \
-        -e 's/\ \+/ /g'             \
-        <<< "$title")"
-
+    # remove leading & trailing spaces
+    title="$(xargs <<< "$title")"
+    artists="$(xargs <<< "$artists")"
+ 
     # use '-' as seperator on output
     echo "$title-$artists"
+}
+
+# tags_read /path/to/file 
+# output: artist-album-title-year-genre
+tags_read() {
+    local tags="$(ffprobe "${FFARGS[@]}" -show_entries format_tags "file://$(realpath "$1")")"
+    local artists album title year genre
+    IFS='=' read -r _ artists <<< "$(grep -Fi 'artist' -w <<< "$tags")"
+    IFS='=' read -r _ album   <<< "$(grep -Fi 'album'  -w <<< "$tags")"
+    IFS='=' read -r _ title   <<< "$(grep -Fi 'title'  -w <<< "$tags")"
+    IFS='=' read -r _ year    <<< "$(grep -Fi 'date'   -w <<< "$tags")"
+    IFS='=' read -r _ genre   <<< "$(grep -Fi 'genre'  -w <<< "$tags")"
+    echo "$artists-$album-$title-$year-$genre"
 }

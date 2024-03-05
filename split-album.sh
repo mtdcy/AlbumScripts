@@ -6,6 +6,7 @@
 # Usage: $0 path/to/cue 
 
 set -e
+umask 022
 LC_ALL=C.UTF-8
 IFS=$'\n'
 
@@ -16,7 +17,7 @@ CUE="$1"
 }
 
 for cue in "${CUE[@]}"; do
-    echo ">>> split $cue"
+    echo -e "\n=== split $cue"
     # change encodings
     vim +"set fileencoding=utf-8 | wq" "$cue" || true
 
@@ -28,10 +29,11 @@ for cue in "${CUE[@]}"; do
         [ -e "${cue%.*}.$ext" ] && file="${cue%.*}.$ext"
     done
 
-    [ -z "$file" ] && echo "can't find data file for $cue" && cd - && continue;
+    [ -z "$file" ] && echo "--- can't find data file for $cue" && cd - && continue;
 
     # do split 
-    shnsplit -f "$cue" -t '%n.%t' -o flac -O always "$file" || {
+    #  => shnsplit translate '/' to '-' by default, but we use '-' as IFS
+    shnsplit -f "$cue" -t '%n.%t' -o flac -O always -m '/ ' "$file" || {
         # some cue may split failed 
         cuebreakpoints "$cue" | sed 's/$/0/g' | shnsplit -t '%n' -o flac -O always "$file" 
     }

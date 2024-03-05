@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+umask 022
 
 LIBROOT=$(dirname "$0")
 . "$LIBROOT"/lib.sh
@@ -27,24 +28,24 @@ FORCE=${FORCE:-0}
 
 [ $# -lt 2 ] && usage && exit 1
 
-echo ">>> $1 ==> $2"
+echo -e "\n>>> $1 ==> $2"
 
 # prepare target dir
 DEST="$2" && mkdir -pv "$DEST"
 
 # remove obsolute(s)
 for file in "$2"/*; do
-    find "$1" -name "$(basename "${file%.*}").*" || {
-        echo "remove outdated file $file"
+    find "$1" -name "$(basename "${file%.*}").*" > /dev/null || {
+        echo "... remove outdated file $file"
         [ "$RUN" -ne 0 ] && rm -fv "$file"
     }
 done
 
-# list files into an array
-LIST=($(find "$1" -maxdepth 1 -type f | sed '1d'))
-
 njobs=0
-for file in "${LIST[@]}"; do
+for file in "$1"/*; do
+    # ignore dirs
+    [ -d "$file" ] && continue
+
     # target path
     target="$DEST/"$(basename "$file")
    
@@ -54,30 +55,37 @@ for file in "${LIST[@]}"; do
             [ -e "${file%.*}.cue" ] && echo -e "... $file ==> ignored" && continue;
 
             # use target dir as album
-            IFS='-' read -r year album genre <<< $(album_get "$2")
+            IFS='-' read -r year album genre <<< "$(album_get "$2")"
 
             # get title & artist
-            IFS='-' read -r title artist <<< $(title_artist_get "$file")
+            IFS='-' read -r title artist <<< "$(title_artist_get "$file")"
 
             # album artist
             [ -z "$ARTIST" ] && IFS='&' read -r album_artist _ <<< "$artist" || album_artist="$ARTIST"
 
-            echo -e "\t==> ARTIST: [$artist], ALBUM: [$album], TITLE: [$title], YEAR: [$year], GENRE: [$genre]"
+            echo -e "=== ARTIST: [$artist], ALBUM: [$album], TITLE: [$title], YEAR: [$year], GENRE: [$genre]"
 
-            # replace extension
-            #case "${target,,}" in
-            #    *.mp3)
-            #        # mp3 is a common file type, no need to convert to m4a
-            #        ;;
-            #    *)
-            #        ;;
-            #esac
             target="${target%.*}.m4a"
-            echo -e "#$(printf '%02d' $njobs) $file ==> $target"
 
-            if [ "$FORCE" -ne 0 ] || [ "$file" -nt "$target" ]; then
+            # update ?
+            UPDATE=0
+            if [ "$FORCE" -ne 0 ] || [ ! -e "$target" ] || [ "$file" -nt "$target" ]; then
+                UPDATE=1
+            else
+                # get target tags
+                IFS='-' read -r a b c d e <<< "$(tags_read "$target")"
+                [ "$artist" = "$a" ] &&
+                [ "$album"  = "$b" ] &&
+                [ "$title"  = "$c" ] &&
+                [ "$year"   = "$d" ] &&
+                [ "$genre"  = "$e" ] ||
+                UPDATE=1
+            fi
+
+            [ "$UPDATE" -ne 0 ] && {
+                echo -e "#$(printf '%02d' $njobs) '$file' ==> '$target'"
+                # using temp file to avoid write partial files
                 [ "$RUN" -ne 0 ] && {
-                    # using temp file to avoid write partial files
                     ffmpeg "${FFARGS[@]}"                      \
                         -i "file://$(realpath "$file")"        \
                         -map 0                                 \
@@ -89,8 +97,7 @@ for file in "${LIST[@]}"; do
                         -metadata date="$year"                 \
                         -metadata genre="$genre"               \
                         -c copy                                \
-                        -c:a libfdk_aac                        \
-                        -b:a 320k                              \
+                        "${FORMAT[@]}"                         \
                         "/tmp/$$-$njobs.m4a" &&
                     mv "/tmp/$$-$njobs.m4a" "$target" &
 
@@ -100,18 +107,19 @@ for file in "${LIST[@]}"; do
                         wait
                     }
                 }
+            }
+            ;;
+        *.jpg|*.jpeg|*.webp|*.png)
+            if [ ! -e "$target" ] || [ "$file" -nt "$target" ]; then
+                echo -e "--- $file ==> $target"
+                [ "$RUN" -ne 0 ] && cp "$file" "$target"
             fi
             ;;
-        *.jpg)
-            echo -e "... $file ==> $target"
-            [ $RUN -ne 0 ] && cp "$file" "$target"
-            ;;
         *)
-            echo -e "... $file ==> ignored"
+            echo -e "--- $file ==> ignored"
             ;;
     esac 
 done
 
 # wait for background jobs
-echo -e "<<< wait for background jobs ...\n"
-wait
+[ "$njobs" -gt 0 ] && echo -e "<<< wait for background jobs ..." && wait || true

@@ -15,7 +15,8 @@ EOF
 [ $# -lt 1 ] && usage && exit 1
 
 # artist
-artist=$(basename "$1")
+#  => respect basename of target, in case pwd been used as input/$1
+artist=$(basename "$2")
 # special artist name
 [ "$artist" = '群星' ] && unset artist
 # remove comments
