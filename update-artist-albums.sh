@@ -4,7 +4,7 @@
 
 set -e
 
-. $(dirname "$0")/lib.sh
+. "$(dirname "$0")/lib.sh"
 
 usage() {
     cat << EOF
@@ -25,7 +25,7 @@ IFS='()（）' read -r artist _ <<< "$artist"
 # find obsolute(s)
 for album in "$2"/*; do
     [ -d "$1/$(basename "$album")" ] || {
-        echo "remove outdated album $album"
+        echo "=== remove outdated album $album"
         [ "$RUN" -ne 0 ] && rm -rfv "$album"
     }
 done
@@ -33,5 +33,7 @@ done
 # list albums 
 find "$1" -maxdepth 1 -type d | sed '1d' |
 while read -r album; do
-    ARTIST="$artist" $(dirname "$0")/update-album.sh "$album" "$2"/$(basename "$album")
+    [ -e "$album/ignore" ] && echo "=== ignore album $album" && continue
+
+    ARTIST="$artist" "$(dirname "$0")"/update-album.sh "$album" "$2/$(basename "$album")"
 done
