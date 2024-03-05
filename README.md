@@ -4,7 +4,7 @@
 
 ```
 歌手名 (备注)
-├── 日期 - 专辑名 (类型)
+├── 日期 - (系列/备注) 专辑名 (类型)
 │   ├── 01.歌曲名(歌手1&歌手2).m4a
 
 
@@ -19,7 +19,7 @@
 │   ├── 06.快门慢舞Live(周杰伦&袁咏琳&邱凯伟).m4a
 ```
 
-## CD/CUE分割 - [split-album.sh](split-album.sh)
+## CUE分割 - [split-album.sh](split-album.sh)
 
 [split-album.sh](split-album.sh)主要用于将CUE母片分割成单独的歌曲文件，**要求CUE文件和数据文件的名称必须相同。**
 
@@ -125,4 +125,17 @@ ARTIST_TITLE=1 ./update-index.sh /path/to/专辑/*.flac
 s@鄧麗君@邓丽君@g       # 繁体
 s@王靖雯@王菲@g         # 曾用名
 s@Faye Wong@王菲@g      # 英文
+```
+
+#### [title.sed](title.sed) & [private.sed]()
+
+主要用于处理原始歌曲文件中的特殊字符，增强[update-index.sh](update-index.sh)的兼容性，也可用于歌曲名的翻译等。同样[title.sed](title.sed)也支持`sed`语法。
+
+同时，[update-index.sh](update-index.sh)还支持歌手或专辑的[private.sed]()，只要将其放置在歌手或专辑文件夹中即可。
+
+```sed
+s/(\s*\([0-9]\{4\}\)\s*)//g     # 删除如'(2008)'等年份字符
+# 语言
+s/(英文)/『英』/g
+s/(国语版)/『国』/g
 ```
