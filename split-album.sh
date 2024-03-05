@@ -26,6 +26,8 @@ for cue in "${CUE[@]}"; do
     # enter source dir
     cd "$(dirname "$cue")" && cue="$(basename "$cue")"
 
+    find . -name "*.flac" ! -name "${cue%.*}.*" -exec rm -f {} \; || true
+
     # find data file
     for ext in wav flac ape; do
         [ -e "${cue%.*}.$ext" ] && file="${cue%.*}.$ext"
