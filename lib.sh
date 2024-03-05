@@ -83,7 +83,7 @@ title_artist_get() {
         IFS='-' read -r a b c <<< "$c"
     done
 
-    if [ ! -z "$b" ]; then
+    if [ -n "$b" ]; then
         [ "$ARTIST_TITLE" -ne 0 ] && {
             title="$b" && artists="$a"
         } || {
@@ -97,9 +97,6 @@ title_artist_get() {
             IFS='()' read -r title artists c <<< "$c"
         done
     fi
-
-    # map 
-    artists=$(sed -f "$LIBROOT"/artist.sed <<< "$artists")
     
     #2. read artists from file
     [ "$UPDATE_ARTIST" -eq 0 ] && {
@@ -110,9 +107,11 @@ title_artist_get() {
 
     #3. use album artist
     [ -n "$ARTIST" ] && [ -z "$artists" ] && {
-        # don't map ARTIST here, needs to be considered in title.sed.
         artists="$ARTIST"
     }
+
+    # map 
+    artists="$(sed -f "$LIBROOT"/artist.sed <<< "$artists")"
 
     # finally: replace '-' with ' ', no '-' in title
     title="${title//-/ /}"
