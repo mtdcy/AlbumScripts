@@ -15,25 +15,33 @@ EOF
 [ $# -lt 1 ] && usage && exit 1
 
 # artist
-#  => respect basename of target, in case pwd been used as input/$1
+#  => respect basename of target, in case '.' been used as input/$1
 artist=$(basename "$2")
 # special artist name
 [ "$artist" = '群星' ] && unset artist
 # remove comments
 IFS='()（）' read -r artist _ <<< "$artist"
 
-# find obsolute(s)
+# find outdated files
 for album in "$2"/*; do
-    [ -d "$1/$(basename "$album")" ] || {
-        echo "=== remove outdated album $album"
-        [ "$RUN" -ne 0 ] && rm -rfv "$album"
+    name="$(basename "$album")"
+    [ -e "$1/$name" ] || {
+        format_string "=== $name" " ==> outdated\n"
+        [ "$RUN" -ne 0 ] && rm -rf "$album"
     }
 done
 
 # list albums 
-find "$1" -maxdepth 1 -type d | sed '1d' |
-while read -r album; do
-    [ -e "$album/ignore" ] && echo "=== ignore album $album" && continue
+for album in "$1/"*; do
+    name="$(basename "$album")"
 
-    ARTIST="$artist" "$(dirname "$0")"/update-album.sh "$album" "$2/$(basename "$album")"
+    [ -e "$album/ignore" ] && format_string "=== $name ignored\n" && continue
+
+    format_string ">>> $name" " ==> $2/$name\n"
+
+    if [ -d "$album" ]; then
+        ARTIST="$artist" "$(dirname "$0")"/update-album.sh "$album" "$2/$name"
+    elif [ -f "$album" ]; then
+        [ "$RUN" -ne 0 ] && cp "$album" "$2/$name"
+    fi
 done

@@ -27,6 +27,9 @@ FORMAT=(
     -b:a 320k
     )
 
+# fixed message width
+WIDTH=40
+
 # album_get path/to/album 
 album_get() {
     local album=$(basename "$1")
@@ -117,8 +120,10 @@ title_artist_get() {
     title="${title//-/ /}"
 
     # remove leading & trailing spaces
-    title="$(xargs <<< "$title")"
-    artists="$(xargs <<< "$artists")"
+    title="${title% }"
+    title="${title# }"
+    artists=${artists% }"
+    artists=${artists# }"
  
     # use '-' as seperator on output
     echo "$title-$artists"
@@ -135,4 +140,18 @@ tags_read() {
     IFS='=' read -r _ year    <<< "$(grep -Fi 'date'   -w <<< "$tags")"
     IFS='=' read -r _ genre   <<< "$(grep -Fi 'genre'  -w <<< "$tags")"
     echo "$artists-$album-$title-$year-$genre"
+}
+
+# format_string width "string"
+format_string() {
+    if which tput &> /dev/null; then
+        local i=0
+        while [ $# -gt 0 ]; do
+            tput hpa "$((WIDTH * i))"
+            echo -ne "$1"; shift
+            i=$((i + 1))
+        done
+    else
+        echo -ne "$@"
+    fi
 }

@@ -28,16 +28,15 @@ FORCE=${FORCE:-0}
 
 [ $# -lt 2 ] && usage && exit 1
 
-echo -e ">>> $1 ==> $2"
-
 # prepare target dir
-DEST="$2" && mkdir -pv "$DEST"
+DEST="$2" && mkdir -p "$DEST"
 
-# remove obsolute(s)
-for file in "$2"/*; do
-    ls "$1/$(basename "${file%.*}")."* > /dev/null 2>&1 || {
-        echo "... remove outdated file $file"
-        [ "$RUN" -ne 0 ] && rm -f "$file"
+# remove outdated
+for file in "$DEST"/*; do
+    name="$(basename "$file")"
+    ls "$1/${name%.*}."* &> /dev/null || {
+        format_string "... $name" " ==> outdated\n"
+        [ "$RUN" -ne 0 ] && rm -rf "$file"
     }
 done
 
@@ -47,13 +46,14 @@ for file in "$1"/*; do
     [ -d "$file" ] && continue
 
     # target path
-    target="$DEST/"$(basename "$file")
+    name="$(basename "$file")" 
+    target="$DEST/$name"
    
     case "${file,,}" in
         *.wma|*.flac|*.wav|*.mp3|*.m4a|*.ape)
             # ignore cue files
             [ -e "${file%.*}.cue" ] && {
-                #echo -e "... $file ==> ignored"
+                #format_string "... $file ignored\n"
                 continue
             }
 
@@ -70,10 +70,16 @@ for file in "$1"/*; do
             # album artist
             [ -z "$ARTIST" ] && IFS='&' read -r album_artist _ <<< "$artist" || album_artist="$ARTIST"
 
-            echo -e "=== ARTIST: [$artist], ALBUM: [$album], TITLE: [$title], YEAR: [$year], GENRE: [$genre]"
+            format_string                                       \
+                "$(printf '#%02d' "$njobs") $name"              \
+                " ==> $(basename "$target")"                    \
+                " << [$year][$album][$genre][$artist][$title]\n"
 
             # update ?
             update="${FORCE:-0}"
+            [ ! -e "$target" ] && update=1
+
+            # compare tags
             [ "$update" -eq 0 ] && {
                 # get target tags
                 IFS='-' read -r a b c d e <<< "$(tags_read "$target")"
@@ -86,7 +92,7 @@ for file in "$1"/*; do
             }
 
             [ "$update" -ne 0 ] && {
-                echo -e "#$(printf '%02d' $njobs) '$file' ==> '$target'"
+                #echo -e "#$(printf '%02d' $njobs) '$file' ==> '$target'"
                 # using temp file to avoid write partial files
                 [ "$RUN" -ne 0 ] && {
                     ffmpeg "${FFARGS[@]}"                      \
@@ -125,4 +131,4 @@ for file in "$1"/*; do
 done
 
 # wait for background jobs
-[ "$njobs" -gt 0 ] && echo -e "<<< wait for background jobs ..." && wait || true
+[ "$njobs" -gt 0 ] && echo -e "<<< wait for background jobs ...\n" && wait || true

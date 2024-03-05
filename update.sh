@@ -16,29 +16,30 @@ EOF
 
 # find obsolute(s)
 for dir in "$2"/*; do
-    [ -d "$1/$(basename "$dir")" ] || {
-        echo "### remove obsolute $dir"
-        [ "$RUN" -ne 0 ] && rm -rfv "$dir"
+    name="$(basename "$dir")"
+    [ -d "$1/$name" ] || {
+        format_string "### $name" " ==> outdated\n"
+        [ "$RUN" -ne 0 ] && rm -rf "$dir"
     }
 done
 
-# artist or album list
-LIST=($(find "$1" -maxdepth 1 -type d))
-
 for dir in "$1"/*; do
     [ -d "$dir" ] || continue
+    [ -L "$dir" ] && continue
 
-    [ -e "$dir/ignore" ] && echo -e "\n### ignore $dir" && continue
+    name="$(basename "$dir")"
 
-    target="$2${dir##"$1"}"
+    [ -e "$dir/ignore" ] && format_string "\n### $name" " ==> ignored\n" && continue
+
+    target="$2/$name"
 
     # is artist ?
-    if [ "$(find "$dir"/* -maxdepth 0 -type d ! -iname "CD*" | wc -l)" -gt 0 ]; then
-        echo -e "\n### update artist: $dir -> $target" 
-        "$(dirname "$0")"/update-artist-albums.sh "$dir" "$target" #> /dev/null
+    if find "$dir" -maxdepth 1 -type f -iname "01*.flac" -o -iname "01*.wav" | grep "$dir" &> /dev/null; then 
+        format_string "\n### Album '$name'"  " ==> $target\n" 
+        "$(dirname "$0")"/update-album.sh "$dir" "$target"
     else
-        echo -e "\n### update album: $dir -> $target" 
-        "$(dirname "$0")"/update-album.sh "$dir" "$target" #> /dev/null
+        format_string "\n### Artist '$name'" " ==> $target\n" 
+        "$(dirname "$0")"/update-artist-albums.sh "$dir" "$target"
     fi
 done | tee update.log
 
