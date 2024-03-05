@@ -21,6 +21,10 @@
 
 ## CD/CUE分割 - [split-album.sh](split-album.sh)
 
+[split-album.sh](split-album.sh)主要用于将CUE母片分割成单独的歌曲文件，**要求CUE文件和数据文件的名称必须相同。**
+
+[split-album.sh](split-album.sh)始终使用`flac`格式来保存原始歌曲，因其支持的音频格式多，可以不经转码直接从母片转换过来。
+
 ### 依赖
 
 ```shell
@@ -41,11 +45,12 @@ brew install ffmpeg cuetools shntool flac
 ./split-album.sh /path/to/专辑.cue
 ```
 
-**默认总是分割成flac文件。**
-
-**cue文件和数据文件的名称必须相同。**
-
 ## 更新文件名及标签信息 - [update-index.sh](update-index.sh)
+
+[update-index.sh](update-index.sh)主要用于原始歌曲管理，可用于：
+
+1. 更新文件名（参考[输出格式](### 输出格式)）
+2. 写入标签信息
 
 ### 依赖
 
@@ -108,3 +113,16 @@ ARTIST_TITLE=1 ./update-index.sh /path/to/专辑/*.flac
 
 * 01.歌曲名(歌手1&歌手2).flac
 
+### 进阶
+
+#### [artist.sed](artist.sed)
+
+由于歌手名存在中文、繁体、英文、大小写、别名、曾用名等情况，所以我们需要将不同情况统一转换成自己的偏好，[artist.sed](artist.sed)应运而生。
+
+[artist.sed](artist.sed)支持`sed`语法：
+
+```sed
+s@鄧麗君@邓丽君@g       # 繁体
+s@王靖雯@王菲@g         # 曾用名
+s@Faye Wong@王菲@g      # 英文
+```
