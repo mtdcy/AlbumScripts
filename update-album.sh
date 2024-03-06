@@ -67,10 +67,10 @@ for file in "$1"/*; do
             #[ -e "$target" ] && [ "$target" -nt "$file" ] && continue
 
             # use target dir as album
-            IFS='-' read -r year album genre <<< "$(album_get "$2")"
+            IFS='/' read -r year album genre <<< "$(album_get "$2")"
 
             # get title & artist
-            IFS='-' read -r title artist <<< "$(title_artist_get "$file")"
+            IFS='/' read -r title artist <<< "$(title_artist_get "$file")"
 
             # album artist
             [ -z "$ARTIST" ] && IFS='&' read -r album_artist _ <<< "$artist" || album_artist="$ARTIST"

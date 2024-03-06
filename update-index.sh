@@ -38,7 +38,7 @@ for file in "${LIST[@]}"; do
     [ -e "${file%.*}.cue" ] && continue
 
     # title & artist
-    IFS='-' read -r title artist <<< $(title_artist_get "$file")
+    IFS='/' read -r title artist <<< $(title_artist_get "$file")
 
     # build new filename
     target=$(dirname "$file")"/$(printf '%02d' $index).$title"

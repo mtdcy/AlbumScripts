@@ -45,7 +45,8 @@ album_get() {
         # year only
         IFS='.' read -r a b <<< "$album"
     }
-    [ -n "$b" ] && {
+
+    [[ "$a" =~ ^[0-9]{4} ]] && [ -n "$b" ] && {
         album="$b"
         year="${a%%.*}"
     }
@@ -59,13 +60,13 @@ album_get() {
 
     # remove spaces
     year="${year// /}"
-    album=${album/# /}
-    album=${album/% /}
-    album=${album//[\.\-]/ }    # no '.-' in album
-    genre=${genre/# /}
-    genre=${genre/% /}
+    album="${album/# /}"
+    album="${album/% /}"
+    #album="${album//[\.\-]/ }" # no '.-' in album
+    genre="${genre/# /}"
+    genre="${genre/% /}"
 
-    echo "$year-$album-$genre"
+    echo "$year/$album/$genre"
 }
 
 # title_artist_get /path/to/file
@@ -125,8 +126,8 @@ title_artist_get() {
     artists="${artists% }"
     artists="${artists# }"
  
-    # use '-' as seperator on output
-    echo "$title-$artists"
+    # use '/' as seperator on output
+    echo "$title/$artists"
 }
 
 # tags_read /path/to/file 
