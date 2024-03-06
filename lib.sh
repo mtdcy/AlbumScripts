@@ -101,8 +101,6 @@ title_artists_get() {
                 IFS='()' read -r title artists c <<< "$c"
             done
         fi
-    else
-        title=$(sed 's/\ *(/『/g;s/)\ */』/g;s/\ *-\ */, /g' <<< "$title")
     fi
     
     #2. read artists from file
@@ -120,14 +118,16 @@ title_artists_get() {
     # map 
     artists="$(sed -f "$LIBROOT"/artist.sed <<< "$artists")"
 
-    # finally: replace '-' with ' ', no '-' in title
-    title="${title//-/ /}"
+    # final: fail safe to title.sed & artist.sed
+    #  1. trim heading & trailing spaces
+    #  2. replace '-' with ','
+    #  3. replace '()' with '『』'
+    #  4. trim spaces
+    title="$(sed 's/^\ \+//;s/\ \+$//;s/\ *-\ */, /g;s/\ *(/『/g;s/\ *)/』/g;s/\ \+/ /g' <<< "$title")"
 
-    # remove leading & trailing spaces
-    title="${title% }"
-    title="${title# }"
-    artists="${artists% }"
-    artists="${artists# }"
+    #  1. trim heading & trailing spaces
+    #  2. trim spaces
+    artists="$(sed 's/^\ \+//;s/\ \*$//;s/\ *&\+\ \*/&/g;s/\ \+/ /g' <<< "$artists")"
  
     # use '/' as seperator on output
     echo "$title/$artists"
