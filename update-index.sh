@@ -31,14 +31,12 @@ EOF
 RUN=${RUN:-0}
 
 index="01"
-LIST=($(find "$@" -type f | sort -n))
-
-for file in "${LIST[@]}"; do
+for file in "$@"; do
     # ignore cue files
     [ -e "${file%.*}.cue" ] && continue
 
     # title & artist
-    IFS='/' read -r title artist <<< $(title_artist_get "$file")
+    IFS='/' read -r title artist <<< $(title_artists_get "$file")
 
     # build new filename
     target=$(dirname "$file")"/$(printf '%02d' $index).$title"
@@ -47,7 +45,10 @@ for file in "${LIST[@]}"; do
     # add extension (lowercase)
     target+=".$(echo ${file##*.} | tr A-Z a-z)"
 
-    format_string "... $file" " ==> $(basename "$target")" " << [$artist][$title]\n"
+    ind="==>"
+    [ "$RUN" -ne 0 ] && ind="$(format_green "$ind")"
+
+    format_put "... $file" " $ind $(basename "$target")" " << [$artist][$title]\n"
     
     # ape -> flac, better to work with ffmpeg
     case "${target,,}" in
@@ -77,7 +78,7 @@ for file in "${LIST[@]}"; do
             rm "$file" &&
             mv "/tmp/$$.${target##*.}" "$target"
             # not writing album
-        elif [ "$file" != "$target" ]; then
+        elif [ ! -e "$target" ]; then
             mv "$file" "$target"
         fi
     }

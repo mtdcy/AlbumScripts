@@ -28,7 +28,7 @@ FORMAT=(
     )
 
 # fixed message width
-WIDTH=40
+WIDTH=48
 
 # album_get path/to/album 
 album_get() {
@@ -69,8 +69,8 @@ album_get() {
     echo "$year/$album/$genre"
 }
 
-# title_artist_get /path/to/file
-title_artist_get() {
+# title_artists_get /path/to/file
+title_artists_get() {
     local title artists private
     # regex filter
     title=$(sed -f "$LIBROOT"/title.sed <<< "$(basename "${1%.*}")")
@@ -130,21 +130,40 @@ title_artist_get() {
     echo "$title/$artists"
 }
 
+# tags_get /path/to/file
+tags_get() {
+    echo "$(album_get "$(dirname "$1")")/$(title_artists_get "$1")"
+}
+
 # tags_read /path/to/file 
 # output: artist-album-title-year-genre
 tags_read() {
-    local tags="$(ffprobe "${FFARGS[@]}" -show_entries format_tags "file://$(realpath "$1")")"
-    local artists album title year genre
+    local artists album title year genre tags
+    tags="$(ffprobe "${FFARGS[@]}" -show_entries format_tags "file://$(realpath "$1")")"
     IFS='=' read -r _ artists <<< "$(grep -Fi 'artist' -w <<< "$tags")"
     IFS='=' read -r _ album   <<< "$(grep -Fi 'album'  -w <<< "$tags")"
     IFS='=' read -r _ title   <<< "$(grep -Fi 'title'  -w <<< "$tags")"
     IFS='=' read -r _ year    <<< "$(grep -Fi 'date'   -w <<< "$tags")"
     IFS='=' read -r _ genre   <<< "$(grep -Fi 'genre'  -w <<< "$tags")"
-    echo "$artists-$album-$title-$year-$genre"
+
+    artists="${artists//\//\&}"
+    echo "$year/$album/$genre/$title/$artists"
 }
 
-# format_string width "string"
-format_string() {
+format_red() {
+    echo -ne "$(tput setaf 1)$*$(tput sgr0)"
+}
+
+format_green() {
+    echo -ne "$(tput setaf 2)$*$(tput sgr0)"
+}
+
+format_yellow() {
+    echo -ne "$(tput setaf 3)$*$(tput sgr0)"
+}
+
+# format_put width "string"
+format_put() {
     if which tput &> /dev/null; then
         local i=0
         while [ $# -gt 0 ]; do

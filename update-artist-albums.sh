@@ -15,18 +15,19 @@ EOF
 [ $# -lt 1 ] && usage && exit 1
 
 # artist
-#  => respect basename of target, in case '.' been used as input/$1
-artist=$(basename "$2")
+artist=$(basename "$(realpath "$1")")
 # special artist name
 [ "$artist" = '群星' ] && unset artist
 # remove comments
 IFS='()（）' read -r artist _ <<< "$artist"
+        
+format_put "### 歌手 '$artist'" " ==> $2\n" 
 
 # find outdated files
 for album in "$2"/*; do
     name="$(basename "$album")"
     [ -e "$1/$name" ] || {
-        format_string "=== $name" " ==> outdated\n"
+        format_put "=== $name" " ==> $(format_yellow "outdated\n")"
         [ "$RUN" -ne 0 ] && rm -rf "$album"
     }
 done
@@ -35,13 +36,12 @@ done
 for album in "$1/"*; do
     name="$(basename "$album")"
 
-    [ -e "$album/ignore" ] && format_string "=== $name ignored\n" && continue
-
-    format_string ">>> $name" " ==> $2/$name\n"
+    [ -e "$album/ignore" ] && format_put "=== $name" " ==> $(format_yellow "ignored\n")" && continue
 
     if [ -d "$album" ]; then
         ARTIST="$artist" "$(dirname "$0")"/update-album.sh "$album" "$2/$name"
     elif [ -f "$album" ]; then
+        format_put "--- $name" " ==> $2/$name\n"
         [ "$RUN" -ne 0 ] && cp "$album" "$2/$name"
     fi
 done

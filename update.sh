@@ -18,7 +18,7 @@ EOF
 for dir in "$2"/*; do
     name="$(basename "$dir")"
     [ -d "$1/$name" ] || {
-        format_string "### $name" " ==> outdated\n"
+        format_put "### $name" " ==> $(format_yellow "outdated\n")"
         [ "$RUN" -ne 0 ] && rm -rf "$dir"
     }
 done
@@ -29,16 +29,14 @@ for dir in "$1"/*; do
 
     name="$(basename "$dir")"
 
-    [ -e "$dir/ignore" ] && format_string "\n### $name" " ==> ignored\n" && continue
+    [ -e "$dir/ignore" ] && format_put "### $name" " ==> $(format_yellow "ignored\n")" && continue
 
     target="$2/$name"
 
     # is artist ?
     if find "$dir" -maxdepth 1 -type f -iname "01*.flac" -o -iname "01*.wav" | grep "$dir" &> /dev/null; then 
-        format_string "### 专辑 '$name'"  " ==> $target\n" 
         "$(dirname "$0")"/update-album.sh "$dir" "$target"
     else
-        format_string "### 歌手 '$name'" " ==> $target\n" 
         "$(dirname "$0")"/update-artist-albums.sh "$dir" "$target"
     fi
 done | tee update.log

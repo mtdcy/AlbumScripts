@@ -20,21 +20,21 @@ CUE="$1"
 for cue in "${CUE[@]}"; do
     [ -e "$(dirname "$cue")/ignore" ] && continue 
 
-    format_string "=== $cue" " ==> split\n"
+    format_put "=== $cue" " ==> split\n"
     # change encodings
     vim +"set fileencoding=utf-8 ff=unix | wq" "$cue" || true
 
     # enter source dir
     cd "$(dirname "$cue")" && cue="$(basename "$cue")"
 
-    find . -name "*.flac" ! -iname "${cue%.*}.flac" -exec rm -f {} \; || true
+    find . -name "*.flac" | grep -Fv "${cue%.*}.flac" | xargs -0 rm -f || true
 
     # find data file
     for ext in wav flac ape; do
         [ -e "${cue%.*}.$ext" ] && file="${cue%.*}.$ext"
     done
 
-    [ -z "$file" ] && format_string "--- $cue" " ==> missing data file\n" && cd - && continue;
+    [ -z "$file" ] && format_put "--- $cue" " ==> missing data file\n" && cd - && continue;
 
     # do split 
     #  => shnsplit translate '/' to '-' by default, but we use '-' as IFS
