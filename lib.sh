@@ -2,7 +2,6 @@
 
 # ENVs:
 #  ARTIST           => album artist
-#  TITLE_ARTIST     => artist in filename after title
 #  ARTIST_TITLE     => reverse order
 #  UPDATE_ARTIST    => update broken artist|title in file
 #  NJOBS=n          => max background transcoding processes.
@@ -10,9 +9,9 @@
 LC_ALL=C.UTF-8
 
 ARTIST="${ARTIST:-}"
-TITLE_ARTIST=${TITLE_ARTIST:-0}
 ARTIST_TITLE=${ARTIST_TITLE:-0}
 UPDATE_ARTIST=${UPDATE_ARTIST:-0}
+TITLE_ONLY=${TITLE_ONLY:-0}         # handling malformated title with '()'
 
 # internal variables
 IFS=$'\n'
@@ -81,25 +80,29 @@ title_artists_get() {
     [ -r "$private" ] && title="$(sed -f "$private" <<< "$title")"
 
     #1. read artists from filename
-    # 歌曲名 - 歌手1&歌手2.flac
-    local c="$title"
-    while [ -n "$c" ]; do 
-        IFS='-' read -r a b c <<< "$c"
-    done
-
-    if [ -n "$b" ]; then
-        [ "$ARTIST_TITLE" -ne 0 ] && {
-            title="$b" && artists="$a"
-        } || {
-            title="$a" && artists="$b"
-        }
-    else
-        # 歌曲名(歌手名1&歌手名2).flac
-        # exception: 01.(系列/备注/...)歌曲名(歌手名1&歌手名2).flac
-        c="$title"
-        while [ -n "$c" ]; do
-            IFS='()' read -r title artists c <<< "$c"
+    if [ "$TITLE_ONLY" -eq 0 ]; then 
+        # 歌曲名 - 歌手1&歌手2.flac
+        local c="$title"
+        while [ -n "$c" ]; do 
+            IFS='-' read -r a b c <<< "$c"
         done
+
+        if [ -n "$b" ]; then
+            [ "$ARTIST_TITLE" -ne 0 ] && {
+                title="$b" && artists="$a"
+            } || {
+                title="$a" && artists="$b"
+            }
+        else
+            # 歌曲名(歌手名1&歌手名2).flac
+            # exception: 01.(系列/备注/...)歌曲名(歌手名1&歌手名2).flac
+            c="$title"
+            while [ -n "$c" ]; do
+                IFS='()' read -r title artists c <<< "$c"
+            done
+        fi
+    else
+        title=$(sed 's/\ *(/『/g;s/)\ */』/g;s/\ *-\ */, /g' <<< "$title")
     fi
     
     #2. read artists from file

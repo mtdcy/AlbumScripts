@@ -25,6 +25,8 @@ s@BEYOND@Beyond@Ig
 s@Faye Wong@王菲@Ig
 s@RondoVeneziano@威尼斯韵律乐队@g
 s@雅尼@Yanni@g
+s@肯尼·\*基@Kenny G@g
+s@凯丽金@Kenny G@g
 
 # 
 s@羅@罗@g
