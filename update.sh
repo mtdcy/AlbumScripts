@@ -35,10 +35,10 @@ for dir in "$1"/*; do
 
     # is artist ?
     if find "$dir" -maxdepth 1 -type f -iname "01*.flac" -o -iname "01*.wav" | grep "$dir" &> /dev/null; then 
-        format_string "\n### Album '$name'"  " ==> $target\n" 
+        format_string "\n### 专辑 '$name'"  " ==> $target\n" 
         "$(dirname "$0")"/update-album.sh "$dir" "$target"
     else
-        format_string "\n### Artist '$name'" " ==> $target\n" 
+        format_string "\n### 歌手 '$name'" " ==> $target\n" 
         "$(dirname "$0")"/update-artist-albums.sh "$dir" "$target"
     fi
 done | tee update.log

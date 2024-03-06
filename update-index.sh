@@ -47,7 +47,7 @@ for file in "${LIST[@]}"; do
     # add extension (lowercase)
     target+=".$(echo ${file##*.} | tr A-Z a-z)"
 
-    echo -e "$file ==> $target\n\t==> ARTIST: [$artist], TITLE: [$title]"
+    format_string "... $file" " ==> $(basename "$target")" " << [$artist][$title]\n"
     
     # ape -> flac, better to work with ffmpeg
     case "${target,,}" in

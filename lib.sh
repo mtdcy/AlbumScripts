@@ -122,8 +122,8 @@ title_artist_get() {
     # remove leading & trailing spaces
     title="${title% }"
     title="${title# }"
-    artists=${artists% }"
-    artists=${artists# }"
+    artists="${artists% }"
+    artists="${artists# }"
  
     # use '-' as seperator on output
     echo "$title-$artists"

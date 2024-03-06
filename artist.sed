@@ -23,6 +23,7 @@ s@張國榮@张国荣@g
 s@Beethoven@贝多芬@Ig
 s@BEYOND@Beyond@Ig
 s@Faye Wong@王菲@Ig
+s@RondoVeneziano@威尼斯韵律乐队@g
 
 # 
 s@羅@罗@g

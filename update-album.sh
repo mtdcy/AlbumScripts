@@ -29,16 +29,20 @@ FORCE=${FORCE:-0}
 [ $# -lt 2 ] && usage && exit 1
 
 # prepare target dir
-DEST="$2" && mkdir -p "$DEST"
+DEST="$2"
 
-# remove outdated
-for file in "$DEST"/*; do
-    name="$(basename "$file")"
-    ls "$1/${name%.*}."* &> /dev/null || {
-        format_string "... $name" " ==> outdated\n"
-        [ "$RUN" -ne 0 ] && rm -rf "$file"
-    }
-done
+if [ -e "$DEST" ]; then
+    # remove outdated
+    for file in "$DEST"/*; do
+        name="$(basename "$file")"
+        ls "$1/${name%.*}."* &> /dev/null || {
+            format_string "... $name" " ==> outdated\n"
+            [ "$RUN" -ne 0 ] && rm -rf "$file"
+        }
+    done
+else
+    mkdir -p "$DEST"
+fi
 
 njobs=0
 for file in "$1"/*; do
@@ -59,7 +63,8 @@ for file in "$1"/*; do
 
             target="${target%.*}.m4a"
 
-            [ -e "$target" ] && [ "$target" -nt "$file" ] && continue
+            # skip modify time check, do deep check with tags
+            #[ -e "$target" ] && [ "$target" -nt "$file" ] && continue
 
             # use target dir as album
             IFS='-' read -r year album genre <<< "$(album_get "$2")"
@@ -69,11 +74,6 @@ for file in "$1"/*; do
 
             # album artist
             [ -z "$ARTIST" ] && IFS='&' read -r album_artist _ <<< "$artist" || album_artist="$ARTIST"
-
-            format_string                                       \
-                "$(printf '#%02d' "$njobs") $name"              \
-                " ==> $(basename "$target")"                    \
-                " << [$year][$album][$genre][$artist][$title]\n"
 
             # update ?
             update="${FORCE:-0}"
@@ -92,6 +92,11 @@ for file in "$1"/*; do
             }
 
             [ "$update" -ne 0 ] && {
+                format_string                                       \
+                    "$(printf '#%02d' "$njobs") $name"              \
+                    " ==> $(basename "$target")"                    \
+                    " << [$year][$album][$genre][$artist][$title]\n"
+
                 #echo -e "#$(printf '%02d' $njobs) '$file' ==> '$target'"
                 # using temp file to avoid write partial files
                 [ "$RUN" -ne 0 ] && {
@@ -112,7 +117,7 @@ for file in "$1"/*; do
 
                     njobs=$(("$njobs" + 1))
                     [ $(("$njobs" % "$NJOBS")) -eq 0 ] && {
-                        echo -e "#$(printf '%02d' "$njobs") too much background jobs ..."
+                        format_string "#$(printf '%02d' "$njobs") too much background jobs ...\n"
                         wait
                     }
                 }
@@ -120,15 +125,15 @@ for file in "$1"/*; do
             ;;
         *.jpg|*.jpeg|*.webp|*.png)
             if [ ! -e "$target" ] || [ "$file" -nt "$target" ]; then
-                echo -e "--- $file ==> $target"
+                format_string "--- $name" " ==> $target\n"
                 [ "$RUN" -ne 0 ] && cp "$file" "$target"
             fi
             ;;
         *)
-            #echo -e "--- $file ==> ignored"
+            #format_string "--- $file" " ==> ignored\n" \
             ;;
     esac 
 done
 
 # wait for background jobs
-[ "$njobs" -gt 0 ] && echo -e "<<< wait for background jobs ...\n" && wait || true
+[ "$njobs" -gt 0 ] && format_string "<<< wait for background jobs ...\n" && wait || true
