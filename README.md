@@ -161,6 +161,9 @@ brew install ffmpeg
 ### 环境变量
 
 * RUN           : 执行转码命令（默认为0）。
+* NJOBS         : 并行转码的歌曲数量（默认为`$(nproc)`）。
+* CODEC         : FFmpeg转码格式（默认为"-c:a libfdk_aac -b:a 320k"）。
+* FORMAT        : FFmpeg转码输出格式（默认为"m4a"）。
 * FORCE         : 强制更新目标文件（默认为0），默认会检查目标文件的时间戳和标签信息。
 
 **[update-album.sh](update-album.sh)支持[update-index.sh](update-index.sh)所有环境变量和`sed`脚本**
