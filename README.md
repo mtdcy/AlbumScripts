@@ -64,29 +64,28 @@ brew install ffmpeg
 
 ### 环境变量
 
-* RUN           : 是否执行真正的命令（默认为0），主要用于检查输出是否正确。
-* ARTIST        : 强制专辑歌手名称（默认为空）。
-~~* TITLE_ARTIST  : 文件名是否包含歌手名（默认为0）。~~
-* UPDATE_ARTIST : 是否更新歌曲标签信息（默认为0）。
-* ARTIST_TITLE  : 歌手名是否在歌曲名前面（默认为0），主要用于处理特殊文件，不影响`update-index.sh`的输出。
+* RUN           : 执行重命名/标签写入命令（默认为0），主要用于检查输出是否正确。
+* ARTIST        : 专辑歌手名称（默认为空）。
+* TITLE_ONLY    : 只包含歌曲名（默认为0），主要用于处理特殊文件『歌手名（备注）』，不影响[update-index.sh](update-index.sh)输出。
+* ARTIST_TITLE  : 歌手名在歌曲名前面（默认为0），主要用于处理特殊文件『歌手名 - 歌曲名』，不影响[update-index.sh](update-index.sh)输出。
+* UPDATE_ARTIST : 更新歌曲标签信息（默认为0）。
 
 注意：
 
-~~1. `UPDATE_ARTIST=0`时，如果`TITLE_ARTIST=0`，依然会更新标签信息。~~
-2. `UPDATE_ARTIST=1`时，文件中的标签信息会被忽略，可用于更新标签信息，也可用于更正错误的标签信息。
-3. 所有环境变量可以叠加使用。
+1. 所有环境变量可以叠加使用。
+2. `UPDATE_ARTIST=1`时，文件中的标签信息会被忽略，可用于更新标签信息，也可用于重写错误的标签信息。
 
 ### 使用方法
 
 ```shell
-#1. 仅更新文件名
+#1. 仅更新文件名（歌手名）
 ./update-index.sh /path/to/专辑/*.flac
 
-#2. 仅更新文件名（歌手名）
-~~TITLE_ARTIST=1 ./update-index.sh /path/to/专辑/*.flac~~
-
-#3. 更新文件名和标签信息
+#2. 更新文件名和标签信息
 UPDATE_ARTIST=1 ./update-index.sh /path/to/专辑/*.flac
+
+#3. 特殊文件处理：歌曲名（备注） => 歌曲名『备注』
+TITLE_ONLY=1 ./update-index.sh /path/to/专辑/*.flac
 
 #4. 特殊文件处理：歌手名 - 歌曲名
 ARTIST_TITLE=1 ./update-index.sh /path/to/专辑/*.flac
