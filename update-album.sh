@@ -61,14 +61,14 @@ for file in "$1"/*; do
     [ "$RUN" -ne 0 ] && ind="$(format_green "$ind")"
    
     case "${file,,}" in
-        *.wma|*.flac|*.wav|*.mp3|*.m4a|*.ape)
+        *.wma|*.flac|*.wav|*.mp3|*.m4a|*.ape|*.ogg)
             # ignore cue files
             [ -e "${file%.*}.cue" ] && {
                 #format_put "... $file ignored\n"
                 continue
             }
 
-            target="${target%.*}.m4a"
+            target="${target%.*}.$FORMAT"
 
             # skip modify time check, do deep check with tags
             #[ -e "$target" ] && [ "$target" -nt "$file" ] && continue
@@ -95,20 +95,20 @@ for file in "$1"/*; do
                 #echo -e "#$(printf '%02d' $njobs) '$file' ==> '$target'"
                 # using temp file to avoid write partial files
                 [ "$RUN" -ne 0 ] && {
-                    ffmpeg "${FFARGS[@]}"                           \
+                    eval ffmpeg "${FFARGS[@]}"                      \
                         -i "file://$(realpath "$file")"             \
                         -map 0                                      \
                         -map_metadata 0                             \
-                        -metadata artist="${artists//&/\/}"          \
+                        -metadata artist="${artists//&/\/}"         \
                         -metadata album_artist="$album_artist"      \
                         -metadata album="$album"                    \
                         -metadata title="$title"                    \
                         -metadata date="$year"                      \
                         -metadata genre="$genre"                    \
                         -c copy                                     \
-                        "${FORMAT[@]}"                              \
-                        "/tmp/$$-$njobs.m4a" &&
-                    mv "/tmp/$$-$njobs.m4a" "$target" &
+                        "$CODEC"                                    \
+                        "/tmp/$$-$njobs.$FORMAT" &&
+                    mv "/tmp/$$-$njobs.$FORMAT" "$target" &
 
                     njobs=$(("$njobs" + 1))
                     [ $(("$njobs" % "$NJOBS")) -eq 0 ] && {

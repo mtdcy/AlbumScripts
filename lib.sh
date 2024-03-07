@@ -13,18 +13,17 @@ ARTIST_TITLE=${ARTIST_TITLE:-0}
 UPDATE_ARTIST=${UPDATE_ARTIST:-0}
 TITLE_ONLY=${TITLE_ONLY:-0}         # handling malformated title with '()'
 
+# 转码
+NJOBS=${NJOBS:-$(nproc)}
+CODEC="${CODEC:-"-c:a libfdk_aac -b:a 320k"}"
+FORMAT="${FORMAT:-m4a}"
+
 # internal variables
 IFS=$'\n'
-NJOBS=${NJOBS:-$(nproc)}
 FFARGS=(
     -hide_banner 
     -loglevel error
 )
-
-FORMAT=(
-    -c:a libfdk_aac
-    -b:a 320k
-    )
 
 # fixed message width
 WIDTH=48
@@ -82,17 +81,20 @@ title_artists_get() {
     #1. read artists from filename
     if [ "$TITLE_ONLY" -eq 0 ]; then 
         # 歌曲名 - 歌手1&歌手2.flac
-        local c="$title"
-        while [ -n "$c" ]; do 
-            IFS='-' read -r a b c <<< "$c"
-        done
+        local a b c
+        c="$title"
+        if [ "$ARTIST_TITLE" -ne 0 ]; then
+            IFS='-' read -r b a <<< "$c"
+            # sanity check
+            [ -n "$a" ] || b=""
+        else
+            while [ -n "$c" ]; do 
+                IFS='-' read -r a b c <<< "$c"
+            done
+        fi
 
         if [ -n "$b" ]; then
-            [ "$ARTIST_TITLE" -ne 0 ] && {
-                title="$b" && artists="$a"
-            } || {
-                title="$a" && artists="$b"
-            }
+            title="$a" && artists="$b"
         else
             # 歌曲名(歌手名1&歌手名2).flac
             # exception: 01.(系列/备注/...)歌曲名(歌手名1&歌手名2).flac
