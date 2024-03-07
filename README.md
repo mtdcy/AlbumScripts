@@ -3,9 +3,9 @@
 ## 目录结构
 
 ```
-歌手名 (备注)
+专辑艺术家 (备注)
 ├── 日期 - (系列/备注) 专辑名 (类型)
-│   ├── 01.歌曲名(歌手1&歌手2).m4a
+│   ├── 01.标题(艺术家1&艺术家2).m4a
 
 
 # 比如：
@@ -65,9 +65,9 @@ brew install ffmpeg
 ### 环境变量
 
 * RUN           : 执行重命名/标签写入命令（默认为0），主要用于检查输出是否正确。
-* ARTIST        : 专辑歌手名称（默认为空）。
-* TITLE_ONLY    : 只包含歌曲名（默认为0），主要用于处理特殊文件『歌手名（备注）』，不影响[update-index.sh](update-index.sh)输出。
-* ARTIST_TITLE  : 歌手名在歌曲名前面（默认为0），主要用于处理特殊文件『歌手名 - 歌曲名』，不影响[update-index.sh](update-index.sh)输出。
+* ARTIST        : 专辑艺术家（默认为空）。
+* TITLE_ONLY    : 只包含标题（默认为0），主要用于处理特殊文件『艺术家（备注）』，不影响[update-index.sh](update-index.sh)输出。
+* ARTIST_TITLE  : 艺术家在标题前面（默认为0），主要用于处理特殊文件『艺术家 - 标题』，不影响[update-index.sh](update-index.sh)输出。
 * UPDATE_ARTIST : 更新歌曲标签信息（默认为0）。
 
 注意：
@@ -78,16 +78,16 @@ brew install ffmpeg
 ### 使用方法
 
 ```shell
-#1. 仅更新文件名（歌手名）
+#1. 仅更新文件名（艺术家）
 ./update-index.sh /path/to/专辑/*.flac
 
 #2. 更新文件名和标签信息
 UPDATE_ARTIST=1 ./update-index.sh /path/to/专辑/*.flac
 
-#3. 特殊文件处理：歌曲名（备注） => 歌曲名『备注』
+#3. 特殊文件处理：标题（备注） => 标题『备注』
 TITLE_ONLY=1 ./update-index.sh /path/to/专辑/*.flac
 
-#4. 特殊文件处理：歌手名 - 歌曲名
+#4. 特殊文件处理：艺术家 - 标题
 ARTIST_TITLE=1 ./update-index.sh /path/to/专辑/*.flac
 
 #5. 合并多个CD
@@ -98,25 +98,38 @@ ARTIST_TITLE=1 ./update-index.sh /path/to/专辑/*.flac
 
 ### 输入格式
 
-* 歌曲名.flac
-* 01 - 歌曲名.flac
-* 01 - 歌曲名 - 歌手名.flac
-* 01 - 歌曲名 - 歌手1&歌手2.flac
+* 标题.flac
+* 01 - 标题.flac
+* 01 - 标题 - 艺术家.flac
+* 01 - 标题 - 艺术家1&艺术家2.flac
 
-* 01.歌曲名.flac
-* 01.歌曲名(歌手名).flac
-* 01.歌曲名(歌手1&歌手2).flac
-* 01.歌曲名『备注』(歌手1&歌手2).flac
+* 01.标题.flac
+* 01.标题(艺术家).flac
+* 01.标题(艺术家1&艺术家2).flac
+* 01.标题『备注』(艺术家1&艺术家2).flac
 
 ### 输出格式
 
-* 01.歌曲名(歌手1&歌手2).flac
+* 01.标题(艺术家1&艺术家2).flac
 
 ### 进阶
 
+#### [title.sed](title.sed) & [private.sed]()
+
+主要用于处理原始歌曲文件中的特殊字符，增强[update-index.sh](update-index.sh)的兼容性，也可用于标题的翻译等。同样[title.sed](title.sed)也支持`sed`语法。
+
+同时，[update-index.sh](update-index.sh)还支持艺术家或专辑的[private.sed]()，只要将其放置在艺术家或专辑文件夹中即可。
+
+```sed
+s/(\s*\([0-9]\{4\}\)\s*)//g     # 删除如'(2008)'等年份字符
+# 语言
+s/(英文)/『英』/g
+s/(国语版)/『国』/g
+```
+
 #### [artist.sed](artist.sed)
 
-由于歌手名存在中文、繁体、英文、大小写、别名、曾用名等情况，所以我们需要将不同情况统一转换成自己的偏好，[artist.sed](artist.sed)应运而生。
+由于艺术家存在中文、繁体、英文、大小写、别名、曾用名等情况，所以我们需要将不同情况统一转换成自己的偏好，[artist.sed](artist.sed)应运而生。
 
 [artist.sed](artist.sed)支持`sed`语法：
 
@@ -126,15 +139,42 @@ s@王靖雯@王菲@g         # 曾用名
 s@Faye Wong@王菲@g      # 英文
 ```
 
-#### [title.sed](title.sed) & [private.sed]()
+## 专辑更新 [update-album.sh](update-album.sh)
 
-主要用于处理原始歌曲文件中的特殊字符，增强[update-index.sh](update-index.sh)的兼容性，也可用于歌曲名的翻译等。同样[title.sed](title.sed)也支持`sed`语法。
+将原始歌曲专辑导出/更新为流媒体服务器所需要的格式，并写入合适的标签信息。
 
-同时，[update-index.sh](update-index.sh)还支持歌手或专辑的[private.sed]()，只要将其放置在歌手或专辑文件夹中即可。
+* 始终从文件夹名称获取『专辑艺术家』名称；
+* 始终从文件夹名称获取『日期』、『专辑』、『类型』名称；
+* 始终从文件名获取『标题』、『艺术家列表』名称；
+* 如果文件名中不包含参与的艺术家列表，则从标签信息中获取；
 
-```sed
-s/(\s*\([0-9]\{4\}\)\s*)//g     # 删除如'(2008)'等年份字符
-# 语言
-s/(英文)/『英』/g
-s/(国语版)/『国』/g
+### 依赖
+
+```shell
+#1. Ubuntu 
+sudo apt install ffmpeg
+
+#2. macOS
+brew install ffmpeg
+```
+
+### 环境变量
+
+* RUN           : 执行转码命令（默认为0）。
+* FORCE         : 强制更新目标文件（默认为0），默认会检查目标文件的时间戳和标签信息。
+
+**[update-album.sh](update-album.sh)支持[update-index.sh](update-index.sh)所有环境变量和`sed`脚本**
+
+### 使用方法
+
+```shell
+./update-album.sh /path/to/专辑 /path/to/目标位置/专辑
+```
+
+### 进阶 - 艺术家专辑更新 - [update-artist-albums.sh](update-artist-albums.sh)
+
+一次性更新艺术家所有专辑。
+
+```shell
+./update-artist-albums.sh /path/to/艺术家 /path/to/目标位置/艺术家
 ```
